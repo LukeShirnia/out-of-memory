@@ -14,9 +14,10 @@ The script looks in /var/log/messages and takes the values recorded by the syste
 Current usage is as follows:
 
 ```
-curl -s https://raw.githubusercontent.com/luke7858/out-of-memory-investigation.py/master/oom.py | python - /var/log/messages
+curl -s https://raw.githubusercontent.com/luke7858/out-of-memory-investigation.py/master/oom.py | python
 ```
 
-Please replace `/var/log/messages` with you OOM log file (eg. `/var/log/syslog.1`)
-
-This will be changed shortly to investigate the appropriate log file depending on the OS
+The script currently works on the following OS:
+..* RedHat 5,7,8
+..* CentOS 5,6,7
+Testing for Debian and Ubuntu to commence shortly 
