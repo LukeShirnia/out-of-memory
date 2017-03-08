@@ -19,7 +19,7 @@ curl -s https://raw.githubusercontent.com/luke7858/out-of-memory-investigation.p
 
 The script currently works on the following OS:
 
-..* RedHat 5,7,8
+..* RedHat 5,6,7
 
 ..* CentOS 5,6,7
 
