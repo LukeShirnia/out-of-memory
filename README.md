@@ -25,7 +25,9 @@ The script currently works on the following OS:
 
 Testing for Debian and Ubuntu to commence shortly 
 
-###Example
+
+
+###Example Output
 
 ```----------------------------------------
 
