@@ -8,7 +8,7 @@ def print_header():
         print "-" * 40
         print ""
         print "      _____ _____ _____ "
-        print "     |     |     |   _ |"
+        print "     |     |     |     |"
         print "     |  |  |  |  | | | |"
         print "     |_____|_____|_|_|_|"
         print ""
