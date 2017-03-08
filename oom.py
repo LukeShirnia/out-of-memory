@@ -44,23 +44,33 @@ def calc_rss(adding_rss):
    total = sum(adding_rss)
    return total
 
+def OOM_record():
+  with open(LOG_FILE, "r") as inLogFile, open("/home/rack/oom", "w") as outfile:
+    record = False
+    for line in inLogFile:
+      if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
+        record = True
+        print "*" * 30
+        print "Out-Of-Memory HAS been invoked by the kernel recently"
+        print "*" * 30
+        print ""
+        print ""
+        date_of_first_invoke = line.split()[0:3]
+        print "Date Of OOM: %s" % (date_of_first_invoke)
+      elif "Out of memory: Kill process" in line.strip():
+        record = False
+      elif record:
+        line = strip_line(line)
+        outfile.write(line)
+        rss_value = strip_rss(line)
+        total_rss.append(rss_value)
 
-with open(LOG_FILE, "r") as inLogFile, open("/home/rack/oom", "w") as outfile:
-  record = False
-  for line in inLogFile:
-    if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
-      record = True
-    elif "Out of memory: Kill process" in line.strip():
-      record = False
-    elif record:
-      line = strip_line(line)
-      outfile.write(line)
-      rss_value = strip_rss(line)
-      total_rss.append(rss_value)
+
 
 
 print_header()
 system_rss = system_resources()
+OOM_record()
 print "Total System Memory:                 %s MB" % (system_rss)
 total_ram = ( add_rss(total_rss) * 4 ) / 1024
 print "Estimated RAM usage at OOM incident: %s MB" % (total_ram)
