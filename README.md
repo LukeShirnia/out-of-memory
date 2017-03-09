@@ -1,7 +1,7 @@
 # Out-Of-Memory Investigation .py
 
 
-The following python script can be used to calculate the estimated RSS value of service after and OOM incident. 
+The following python script can be used to calculate the estimated RSS (RAM) value of each service moments before the OOM incident. The system logs the RSS values of all processes at the time OOM is invoked, the file will calculate how much RAM your service was theorietically trying to use and how much it actualy has 
 
 
 The script looks in /var/log/messages and takes the values recorded by the system just before the incident occurs. 
