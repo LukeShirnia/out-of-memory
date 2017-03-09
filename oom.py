@@ -1,5 +1,6 @@
 from sys import argv
 import platform
+import re
 
 total_individual = []
 
@@ -11,41 +12,40 @@ def print_header():
         print "     |  |  |  |  | | | |"
         print "     |_____|_____|_|_|_|"
         print ""
-	print "     Out Of Memory Analyser"
-	print ""
+        print "     Out Of Memory Analyser"
+        print ""
         print "-" * 40
-#        print ""
 
 def neat_oom_invoke():
         print "*" * 50
         print "         !!!!OOM ISSUE!!!!"
-	print "This device HAS run out of memory recently"
+        print "This device HAS run out of memory recently"
         print "*" * 50
         print ""
         print ""
 
 def dates_invoked(dates):
-	global all_dates
-	all_dates = []
-	date_of_first_invoke = line.split()[0:3]
-	all_dates.append(date_of_first_invoke)
+        global all_dates
+        all_dates = []
+        date_of_first_invoke = line.split()[0:3]
+        all_dates.append(date_of_first_invoke)
 
 def os_check():
-	os_platform = platform.system()
-	if os_platform == "Linux":
-		distro = platform.linux_distribution()[0]
-		distro = distro.split()[0]
-		return distro
-	else:
-		print "Stop Using a Rubbish OS!!"
+        os_platform = platform.system()
+        if os_platform == "Linux":
+                distro = platform.linux_distribution()[0]
+                distro = distro.split()[0]
+                return distro
+        else:
+                print "Stop Using a Rubbish OS!!"
 
 def system_resources():
    with open("/proc/meminfo", "r") as meminfo:
       for lines in meminfo:
          if "MemTotal" in lines.strip():
             memory_value = int(lines.split()[1])
-	    system_memory = memory_value / 1024
-	    return system_memory
+            system_memory = memory_value / 1024
+            return system_memory
 
 def strip_rss(line):
    value = int(line.split()[10])
@@ -55,65 +55,77 @@ def add_rss(total_rss):
    return sum((total_rss) * 4 ) / 1024
 
 def strip_line(line):
-   for ch in ["[","]"]:
+   for ch in ["[","]","}","{","'", "(",")"]:
       if ch in line:
         line = line.replace(ch,"")
    return line
 
-def check_if_incident(counter, oom_date_count, total_rss_per_incident):
-	if counter > 1: # if oom invoked then print
-		neat_oom_invoke()
-		print "Sytem RAM: %s MB" % (system_resources())
-		print ""
-		# print "Dates OOM Occured"
-		for i in range(1, counter):
-			print "-" * 20
-			print "Dates OOM occured: %s" % (oom_date_count[i - 1])
-			print "Total Estimated RAM at OOM %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
-			print "-" * 20
-			print ""
-	else:
-        	print ""
-	        print "OOM has NOT occured recently!"
-		print ""
+
+def check_if_incident(counter, oom_date_count, total_rss_per_incident,  killed_services):
+        if counter > 1: # if oom invoked then print
+                neat_oom_invoke()
+                print "Sytem RAM: %s MB" % (system_resources())
+                print ""
+                # print "Dates OOM Occured"
+                for i in range(1, counter):
+                        print "-" * 20
+                        print "Dates OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
+                        print "Estimated RAM at OOM: %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
+                        print "Services Killed:      %s " % ("".join(killed_services[i]))
+                        print "-" * 20
+                        print ""
+        else:
+                print ""
+                print "OOM has NOT occured recently!"
+                print ""
 
 def service_count(line): # fixxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-	value = int(line.split()[16])
-	if len(value) == 1:
-		return value
+        value = int(line.split()[16])
+        if len(value) == 1:
+                return value
 
-def OOM_record(LOG_FILE):    
+
+def OOM_record(LOG_FILE):
   oom_date_count = []
   running_service = []
   total_rss = {}
+  killed_services = {}
   with open(LOG_FILE, "r") as inLogFile, open("/home/rack/oom", "w") as outfile:
     record = False
+    record_oom_true_fale = False
     counter = 1
     for line in inLogFile:
       if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
-	total_rss[counter] = []
+        total_rss[counter] = []
+        killed_services[counter] = []
         record = True
-	oom_count_plus_one = line.split()[0:3]
-	oom_date_count.append(oom_count_plus_one)
+        record_oom_true_false = False
+        oom_count_plus_one = line.split()[0:3]
+        oom_date_count.append(oom_count_plus_one)
       elif "Out of memory: Kill process" in line.strip():
         record = False
-	counter += 1
+        killed = re.search("Out of memory: Kill process (.*) score ", line)
+        killed = killed.group(1)
+        killed = strip_line(killed)
+        killed = killed.strip("0123456789 ")
+        killed_services[counter].append(killed)
+        counter += 1
       elif record:
         line = strip_line(line)
- 	outfile.write(line) # write the process values to a file
+        outfile.write(line) # write the process values to a file
         rss_value = strip_rss(line) # calculate total value of all processes
-        total_rss[counter].append(rss_value) # 
-    check_if_incident(counter, oom_date_count, total_rss)
+        total_rss[counter].append(rss_value) #
+    check_if_incident(counter, oom_date_count, total_rss, killed_services)
 
 print_header()
 os_check_value = os_check()
 CentOS_RedHat_Distro = ['redhat', 'centos']
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 if os_check_value.lower() in CentOS_RedHat_Distro:
-	system_rss = system_resources()
-	OOM_record("/var/log/messages")
+        system_rss = system_resources()
+        OOM_record("/var/log/messages")
 elif os_check_value.lower() in Ubuntu_Debian_Distro:
-	#print "Ubuntu"	
-	OOM_record("/var/log/syslog")
+        #print "Ubuntu"
+        OOM_record("/var/log/syslog")
 else:
-	print "Unsupported OS"
+        print "Unsupported OS"
