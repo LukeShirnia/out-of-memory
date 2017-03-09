@@ -14,7 +14,7 @@ def print_header():
 	print "     Out Of Memory Analyser"
 	print ""
         print "-" * 40
-        print ""
+#        print ""
 
 def neat_oom_invoke():
         print "*" * 50
