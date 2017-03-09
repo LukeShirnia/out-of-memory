@@ -71,7 +71,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident,  killed_s
                         print "-" * 20
                         print "Dates OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
                         print "Estimated RAM at OOM: %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
-                        print "Services Killed:      %s " % ("".join(killed_services[i]))
+                        print "Services Killed:      %s " % (", ".join(killed_services[i]))
                         print "-" * 20
                         print ""
         else:
@@ -92,9 +92,10 @@ def OOM_record(LOG_FILE):
   killed_services = {}
   with open(LOG_FILE, "r") as inLogFile: #, open("/home/rack/oom", "w") as outfile:
     record = False
-    record_oom_true_fale = False
+    record_oom_true_false = False
     counter = 1
     for line in inLogFile:
+      killed = re.search("Killed process (.*) total", line)
       if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
         total_rss[counter] = []
         killed_services[counter] = []
@@ -103,18 +104,19 @@ def OOM_record(LOG_FILE):
         oom_count_plus_one = line.split()[0:3]
         oom_date_count.append(oom_count_plus_one)
       elif "Out of memory: Kill process" in line.strip():
+        record_oom_true_false = True
         record = False
-        killed = re.search("Out of memory: Kill process (.*) score ", line)
-        killed = killed.group(1)
-        killed = strip_line(killed)
-        killed = killed.strip("0123456789 ")
-        killed_services[counter].append(killed)
         counter += 1
       elif record:
         line = strip_line(line)
-#        outfile.write(line) # write the process values to a file
+#       outfile.write(line) # write the process values to a file
         rss_value = strip_rss(line) # calculate total value of all processes
         total_rss[counter].append(rss_value) #
+      elif record_oom_true_false and killed:
+        killed = killed.group(1)
+        killed = strip_line(killed)
+        killed = killed.strip("0123456789 ")
+        killed_services[counter-1].append(killed)
     check_if_incident(counter, oom_date_count, total_rss, killed_services)
 
 print_header()
@@ -123,7 +125,7 @@ CentOS_RedHat_Distro = ['redhat', 'centos']
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 if os_check_value.lower() in CentOS_RedHat_Distro:
         system_rss = system_resources()
-        OOM_record("/var/log/messages")
+        OOM_record("/home/python/rackspace/syslog")
 elif os_check_value.lower() in Ubuntu_Debian_Distro:
         #print "Ubuntu"
         OOM_record("/var/log/syslog")
