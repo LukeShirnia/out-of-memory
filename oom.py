@@ -1,9 +1,6 @@
 from sys import argv
 import platform
 
-#script, LOG_FILE = argv
-#LOG_FILE = "/home/python/rackspace/syslog"
-# total_rss = []
 total_individual = []
 
 def print_header():
@@ -38,7 +35,7 @@ def os_check():
 	if os_platform == "Linux":
 		distro = platform.linux_distribution()[0]
 		distro = distro.split()[0]
-		return distro.lower()
+		return distro
 	else:
 		print "Stop Using a Rubbish OS!!"
 
@@ -78,6 +75,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident):
 	else:
         	print ""
 	        print "OOM has NOT occured recently!"
+		print ""
 
 def service_count(line): # fixxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 	value = int(line.split()[16])
@@ -108,11 +106,14 @@ def OOM_record(LOG_FILE):
     check_if_incident(counter, oom_date_count, total_rss)
 
 print_header()
-if "centos" or "redhat" in os_check():
+os_check_value = os_check()
+CentOS_RedHat_Distro = ['redhat', 'centos']
+Ubuntu_Debian_Distro = ['ubuntu', 'debian']
+if os_check_value.lower() in CentOS_RedHat_Distro:
 	system_rss = system_resources()
 	OOM_record("/var/log/messages")
-elif "ubuntu" or "debian" in os_check():
-	print "Ubuntu"	
+elif os_check_value.lower() in Ubuntu_Debian_Distro:
+	#print "Ubuntu"	
 	OOM_record("/var/log/syslog")
 else:
 	print "Unsupported OS"
