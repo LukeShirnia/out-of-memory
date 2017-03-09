@@ -49,14 +49,26 @@ This device HAS run out of memory recently
 Sytem RAM: 987 MB
 
 --------------------
-Dates OOM occured:    Mar, 7, 15:13:50
-Estimated RAM at OOM: 1783 MB
+Dates OOM occured:    Mar, 9, 10:58:55
+Estimated RAM at OOM: 1509 MB
 Services Killed:      mysqld
 --------------------
 
 --------------------
-Dates OOM occured:    Mar, 8, 12:13:50
-Estimated RAM at OOM: 1783 MB
+Dates OOM occured:    Mar, 9, 10:59:57
+Estimated RAM at OOM: 1555 MB
+Services Killed:      mysqld
+--------------------
+
+--------------------
+Dates OOM occured:    Mar, 9, 11:37:32
+Estimated RAM at OOM: 1369 MB
+Services Killed:      mysqld
+--------------------
+
+--------------------
+Dates OOM occured:    Mar, 9, 11:49:23
+Estimated RAM at OOM: 1792 MB
 Services Killed:      mysqld
 --------------------
 ```
