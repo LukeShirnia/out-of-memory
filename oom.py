@@ -1,8 +1,7 @@
 from sys import argv
 import platform
 
-#script, LOG_FILE = argv
-# total_rss = []
+
 total_individual = []
 
 def print_header():
@@ -19,9 +18,10 @@ def print_header():
         print ""
 
 def neat_oom_invoke():
-        print "*" * 30
-        print "Out-Of-Memory HAS been invoked by the kernel recently"
-        print "*" * 30
+        print "*" * 50
+        print "         !!!!OOM ISSUE!!!!"
+	print "This device HAS run out of memory recently"
+        print "*" * 50
         print ""
         print ""
 
@@ -36,7 +36,6 @@ def os_check():
 	if os_platform == "Linux":
 		distro = platform.linux_distribution()[0]
 		return distro
-#		distribution_check()
 	else:
 		print "Stop Using a Rubbish OS!!"
 
@@ -64,9 +63,14 @@ def strip_line(line):
 def check_if_incident(counter, oom_date_count, total_rss_per_incident):
 	if counter > 1: # if oom invoked then print
 		neat_oom_invoke()
+		print "Sytem RAM: %s MB" % (system_resources())
+		print ""
+		# print "Dates OOM Occured"
 		for i in (1, counter - 1):
-			print "Date OOM occured: %s" % (oom_date_count[i - 1])
-			print "Total Estimates OOM RAM %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
+			print "-" * 20
+			print "Dates OOM occured: %s" % (oom_date_count[i - 1])
+			print "Total Estimated RAM at OOM %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
+			print "-" * 20
 			print ""
 	else:
         	print ""
