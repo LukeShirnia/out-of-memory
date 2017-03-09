@@ -32,7 +32,7 @@ Testing for Debian and Ubuntu to commence shortly
 ```
 ----------------------------------------
 
-      _____ _____ _____ 
+      _____ _____ _____
      |     |     |     |
      |  |  |  |  | | | |
      |_____|_____|_|_|_|
@@ -40,22 +40,23 @@ Testing for Debian and Ubuntu to commence shortly
      Out Of Memory Analyser
 
 ----------------------------------------
-
 **************************************************
          !!!!OOM ISSUE!!!!
 This device HAS run out of memory recently
 **************************************************
 
 
-Sytem RAM: 1887 MB
+Sytem RAM: 987 MB
 
 --------------------
-Dates OOM occured: ['Mar', '7', '15:13:50']
-Total Estimated RAM at OOM 1783 MB
+Dates OOM occured:    Mar, 7, 15:13:50
+Estimated RAM at OOM: 1783 MB
+Services Killed:      mysqld
 --------------------
 
 --------------------
-Dates OOM occured: ['Mar', '8', '15:13:50']
-Total Estimated RAM at OOM 1883 MB
+Dates OOM occured:    Mar, 8, 12:13:50
+Estimated RAM at OOM: 1783 MB
+Services Killed:      mysqld
 --------------------
 ```
