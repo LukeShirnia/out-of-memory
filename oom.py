@@ -25,22 +25,11 @@ def neat_oom_invoke():
         print ""
         print ""
 
-#def print_oom_invoked(line):
-#	date_of_first_invoke = line.split()[0:3]
-#	dates_invoked(date_of_first_invoke)
-
 def dates_invoked(dates):
 	global all_dates
 	all_dates = []
 	date_of_first_invoke = line.split()[0:3]
 	all_dates.append(date_of_first_invoke)
-
-#def summary():
-#        print "Total System Memory:                 %s MB" % (system_rss)
-#        total_ram = add_rss(total_rss)
-#        print "Estimated RAM usage at OOM incident: %s MB" % (total_ram)
-#        print ""
-#        print "-" * 40
 
 def os_check():
 	os_platform = platform.system()
@@ -75,13 +64,10 @@ def strip_line(line):
 def check_if_incident(counter, oom_date_count, total_rss_per_incident):
 	if counter > 1: # if oom invoked then print
 		neat_oom_invoke()
-		# print "Dates OOM Occured"
 		for i in (1, counter - 1):
-			print oom_date_count[i - 1]
+			print "Date OOM occured: %s" % (oom_date_count[i - 1])
 			print "Total Estimates OOM RAM %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
 			print ""
-#		for i in oom_date_count: print "        ", i
-#		print sum((total_rss_per_incident[2]) * 4) / 1024 #NEEEDS FIXING!!!
 	else:
         	print ""
 	        print "OOM has NOT occured recently!"
