@@ -1,7 +1,6 @@
 from sys import argv
 import platform
 
-
 total_individual = []
 
 def print_header():
@@ -66,7 +65,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident):
 		print "Sytem RAM: %s MB" % (system_resources())
 		print ""
 		# print "Dates OOM Occured"
-		for i in (1, counter - 1):
+		for i in range(1, counter):
 			print "-" * 20
 			print "Dates OOM occured: %s" % (oom_date_count[i - 1])
 			print "Total Estimated RAM at OOM %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
@@ -76,9 +75,14 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident):
         	print ""
 	        print "OOM has NOT occured recently!"
 
+def service_count(line): # fixxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+	value = int(line.split()[16])
+	if len(value) == 1:
+		return value
 
 def OOM_record(LOG_FILE):    
   oom_date_count = []
+  running_service = []
   total_rss = {}
   with open(LOG_FILE, "r") as inLogFile, open("/home/rack/oom", "w") as outfile:
     record = False
@@ -93,7 +97,7 @@ def OOM_record(LOG_FILE):
         record = False
 	counter += 1
       elif record:
-        line = strip_line(line) # remove brackets from every line
+        line = strip_line(line)
  	outfile.write(line) # write the process values to a file
         rss_value = strip_rss(line) # calculate total value of all processes
         total_rss[counter].append(rss_value) # 
@@ -104,7 +108,6 @@ osd = os_check()
 if "centos" or "redhat" in osd.lower():
 	system_rss = system_resources()
 	OOM_record("/var/log/messages")
-	# summary()
 elif "ubuntu" or "debian" in osd.lower():
 	print "Ubuntu"	
 	OOM_record("/var/log/syslog")
