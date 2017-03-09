@@ -29,9 +29,10 @@ Testing for Debian and Ubuntu to commence shortly
 
 ###Example Output
 
-```----------------------------------------
+```
+----------------------------------------
 
-      _____ _____ _____
+      _____ _____ _____ 
      |     |     |     |
      |  |  |  |  | | | |
      |_____|_____|_|_|_|
@@ -45,9 +46,11 @@ Out-Of-Memory HAS been invoked by the kernel recently
 ******************************
 
 
-Date Of OOM: ['Mar', '7', '15:13:50']
-Total System Memory:                 1987 MB
-Estimated RAM usage at OOM incident: 1983 MB
+Date OOM occured: ['Mar', '10', '15:13:50']
+Total Estimates OOM RAM 1783 MB
+
+Date OOM occured: ['Mar', '7', '15:13:50']
+Total Estimates OOM RAM 1783 MB
 
 ----------------------------------------
 ```
