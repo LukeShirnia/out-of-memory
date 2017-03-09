@@ -90,7 +90,7 @@ def OOM_record(LOG_FILE):
   running_service = []
   total_rss = {}
   killed_services = {}
-  with open(LOG_FILE, "r") as inLogFile, open("/home/rack/oom", "w") as outfile:
+  with open(LOG_FILE, "r") as inLogFile: #, open("/home/rack/oom", "w") as outfile:
     record = False
     record_oom_true_fale = False
     counter = 1
@@ -112,7 +112,7 @@ def OOM_record(LOG_FILE):
         counter += 1
       elif record:
         line = strip_line(line)
-        outfile.write(line) # write the process values to a file
+#        outfile.write(line) # write the process values to a file
         rss_value = strip_rss(line) # calculate total value of all processes
         total_rss[counter].append(rss_value) #
     check_if_incident(counter, oom_date_count, total_rss, killed_services)
