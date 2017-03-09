@@ -51,7 +51,7 @@ Sytem RAM: 987 MB
 --------------------
 Dates OOM occured:    Mar, 9, 10:58:55
 Estimated RAM at OOM: 1509 MB
-Services Killed:      mysqld
+Services Killed:      mysqld, apache
 --------------------
 
 --------------------
