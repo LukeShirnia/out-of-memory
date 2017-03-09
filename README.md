@@ -41,16 +41,21 @@ Testing for Debian and Ubuntu to commence shortly
 
 ----------------------------------------
 
-******************************
-Out-Of-Memory HAS been invoked by the kernel recently
-******************************
+**************************************************
+         !!!!OOM ISSUE!!!!
+This device HAS run out of memory recently
+**************************************************
 
 
-Date OOM occured: ['Mar', '10', '15:13:50']
-Total Estimates OOM RAM 1783 MB
+Sytem RAM: 1887 MB
 
-Date OOM occured: ['Mar', '7', '15:13:50']
-Total Estimates OOM RAM 1783 MB
+--------------------
+Dates OOM occured: ['Mar', '7', '15:13:50']
+Total Estimated RAM at OOM 1783 MB
+--------------------
 
-----------------------------------------
+--------------------
+Dates OOM occured: ['Mar', '8', '15:13:50']
+Total Estimated RAM at OOM 1883 MB
+--------------------
 ```
