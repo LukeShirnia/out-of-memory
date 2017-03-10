@@ -68,7 +68,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                 for i in range(1, counter):
                         print "-" * 40
                         print "Dates OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
-                        print "Sytem RAM: {0:15} MB".format(system_resources())
+                        print "Sytem RAM: {0:14} MB".format(system_resources())
                         print "Estimated RAM at OOM: %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
                         print "Services Killed:      %s " % (", ".join(killed_services[i]))
                         print "-" * 40
