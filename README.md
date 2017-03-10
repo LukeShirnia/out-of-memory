@@ -23,6 +23,8 @@ The script currently works on the following OS:
 
 ..* CentOS 5,6,7
 
+..* Ubuntu 14.04LTS
+
 Testing for Debian and Ubuntu to commence shortly 
 
 
