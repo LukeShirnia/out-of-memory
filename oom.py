@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 # Author:       Luke Shirnia
 # Source:       https://github.com/LukeShirnia/out-of-memory-investigation.py
 
