@@ -3,6 +3,8 @@ import platform
 import re
 
 total_individual = []
+CentOS_RedHat_Distro = ['redhat', 'centos']
+Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 def print_header():
         print "-" * 40
@@ -154,8 +156,8 @@ def OOM_record(LOG_FILE):
         unique = find_unique_services(list_of_values[counter])
         oom_services = add_rss_for_processes(unique, list_of_values[counter])
         oom_services = sorted(oom_services,key=lambda x: x[1], reverse=True)
-        oom_services = oom_services[:5]
         service_value_list[counter] = oom_services
+        service_value_list[counter] = service_value_list[counter][:5]
         record_oom_true_false = True
         record = False
         counter += 1
@@ -174,13 +176,27 @@ def OOM_record(LOG_FILE):
 
 print_header()
 os_check_value = os_check()
-CentOS_RedHat_Distro = ['redhat', 'centos']
-Ubuntu_Debian_Distro = ['ubuntu', 'debian']
-if os_check_value.lower() in CentOS_RedHat_Distro:
-        system_rss = system_resources()
-        OOM_record("/var/log/messages")
-elif os_check_value.lower() in Ubuntu_Debian_Distro:
-        #print "Ubuntu"
-        OOM_record("/var/log/syslog")
+
+if len(argv) == 1:
+        if os_check_value.lower() in CentOS_RedHat_Distro:
+                system_rss = system_resources()
+                OOM_record("/home/python/rackspace/syslog")
+        elif os_check_value.lower() in Ubuntu_Debian_Distro:
+                #print "Ubuntu"
+                OOM_record("/var/log/syslog")
+        else:
+                print "Unsupported OS"
+elif len(argv) == 2:
+        script, OOM_LOG = argv
+        if os_check_value.lower() in CentOS_RedHat_Distro:
+                system_rss = system_resources()
+                OOM_record(OOM_LOG)
+        elif os_check_value.lower() in Ubuntu_Debian_Distro:
+                #print "Ubuntu"
+                OOM_record(OOM_LOG)
+        else:
+                print "Unsupported OS"
 else:
-        print "Unsupported OS"
+        print "Too Many Arguments"
+        print "Try again"
+        print len(argv)
