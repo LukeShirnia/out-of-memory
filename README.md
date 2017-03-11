@@ -1,21 +1,26 @@
 # Out-Of-Memory Investigation .py
 
 
-The following python script can be used to calculate the estimated RSS (RAM) value of each service moments before the OOM incident. The system logs the RSS values of all processes at the time OOM is invoked, the file will calculate how much RAM your service was theorietically trying to use and how much it actualy has 
+The following python script can be used to calculate the estimated RSS (RAM) value of each service at the time a kernel invoked OOM killer. At the time of an OOM incident, the system logs the estimated RSS value of each service, this script will calculate how much RAM the services were "theorietically" trying to use, the total RSS value and how much RAM your system actually has to offer these services. 
 
 
-The script looks in /var/log/messages and takes the values recorded by the system just before the incident occurs. 
-
-
-
+The script looks in /var/log/messages or /var/log/syslog and takes the values recorded by the system just before the incident occurs. 
 
 
 
-Current usage is as follows:
+
+
+
+There are currently 2 usage methods. The first and most straight foward is simply running the command below:
 
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python
 ```
+You can also specify a specific log file if you are looking into historical data, or the logs have been rotated. Replace `/var/log/messages.1` with the log file you wish to analyse. 
+```
+curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python - /var/log/messages.1
+```
+
 
 The script currently works on the following OS:
 
@@ -25,9 +30,9 @@ The script currently works on the following OS:
 
 ..* Ubuntu 14.04LTS
 
+Testing on Ubuntu and Debian ongoing. 
 
 
-Testing for Debian and Ubuntu to commence shortly 
 
 
 
@@ -51,7 +56,7 @@ This device HAS run out of memory recently
 
 ----------------------------------------
 Dates OOM occured:    Mar, 9, 10:58:55
-Sytem RAM:             987 MB
+Sytem RAM:            987 MB
 Estimated RAM at OOM: 1509 MB
 Services Killed:      mysqld, apache
 ----------------------------------------
@@ -67,7 +72,7 @@ Service: fail2ban-server       10 MB
 
 ----------------------------------------
 Dates OOM occured:    Mar, 9, 10:59:57
-Sytem RAM:             987 MB
+Sytem RAM:            987 MB
 Estimated RAM at OOM: 1555 MB
 Services Killed:      mysqld
 ----------------------------------------
@@ -83,7 +88,7 @@ Service: rackspace-monit       15 MB
 
 ----------------------------------------
 Dates OOM occured:    Mar, 9, 11:37:32
-Sytem RAM:             987 MB
+Sytem RAM:            987 MB
 Estimated RAM at OOM: 1369 MB
 Services Killed:      mysqld
 ----------------------------------------
@@ -100,7 +105,7 @@ Service: rackspace-monit       15 MB
 
 ----------------------------------------
 Dates OOM occured:    Mar, 9, 11:49:23
-Sytem RAM:             987 MB
+Sytem RAM:            987 MB
 Estimated RAM at OOM: 1792 MB
 Services Killed:      mysqld
 ----------------------------------------
