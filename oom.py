@@ -184,7 +184,7 @@ os_check_value = os_check()
 if len(argv) == 1:
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
-                OOM_record("/home/python/rackspace/syslog")
+                OOM_record("/var/log/messages")
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
                 #print "Ubuntu"
                 OOM_record("/var/log/syslog")
