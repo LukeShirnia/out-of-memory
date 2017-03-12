@@ -11,11 +11,16 @@ The script looks in /var/log/messages or /var/log/syslog and takes the values re
 
 
 
-There are currently 2 usage methods. The first and most straight foward is simply running the command below:
+There are currently 2 usage methods. 
+
+
+### Method 1
+The first and most straight foward is simply running the command below:
 
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python
 ```
+### Method 2
 You can also specify a specific log file if you are looking into historical data, or the logs have been rotated. Replace `/var/log/messages.1` with the log file you wish to analyse. 
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python - /var/log/messages.1
