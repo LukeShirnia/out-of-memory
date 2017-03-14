@@ -146,7 +146,6 @@ def find_rss_column(line):
 			column = int(i+1)
 			return column
 
-
 def OOM_record(LOG_FILE):
   oom_date_count = []
   running_service = []
@@ -174,7 +173,7 @@ def OOM_record(LOG_FILE):
       oom_date_count.append(oom_count_plus_one)
       line = strip_line(line)
       column_number = find_rss_column(line.split())
-    elif "Out of memory: Kill process" in line.strip() or len(line) < 16 and record == True:
+    elif "Out of memory: Kill process" in line.strip() or len(line.split()) < 15 and record == True:
       service_value_list[counter] = []
       list_of_values[counter] = filter(None, list_of_values[counter])
       unique = find_unique_services(list_of_values[counter])
@@ -199,6 +198,8 @@ def OOM_record(LOG_FILE):
   inLogFile.close()
   check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list)
 
+
+###### Start script
 print_header()
 os_check_value = os_check()
 
