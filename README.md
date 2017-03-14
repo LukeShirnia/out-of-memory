@@ -35,7 +35,8 @@ The script currently works on the following OS:
 
 ..* RedHat 6,7
 
-..* Redhat/CentOS 5*** Only works on some devices, the system does not log the same and you need to specify python2.6 or 2.6 
+..* Redhat/CentOS 5
+*** Only works on some devices, the system does not log the same and you need to specify python2.6 or 2.6 
 
 ..* CentOS 5,6,7
 
