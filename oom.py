@@ -8,7 +8,7 @@ import re
 import gzip
 
 total_individual = []
-CentOS_RedHat_Distro = ['redhat', 'centos']
+CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 def print_header():
