@@ -21,7 +21,9 @@ The first and most straight foward is simply running the command below:
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python
 ```
 ### Method 2
-You can also specify a specific log file if you are looking into historical data, or the logs have been rotated. Replace `/var/log/messages.1` with the log file you wish to analyse. 
+You can also specify a specific log file if you are looking into historical data, or the logs have been rotated. 
+Note: This WILL work with compressed log files!
+Replace `/var/log/messages.1` with the log file you wish to analyse. 
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python - /var/log/messages.1
 ```
