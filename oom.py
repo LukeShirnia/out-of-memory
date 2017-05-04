@@ -30,7 +30,7 @@ def neat_oom_invoke():
 #        print "This device HAS run out of memory recently"
         print "*" * 50
         print ""
-        print ""
+    #    print ""
 
 def dates_invoked(dates):
         global all_dates
@@ -71,11 +71,15 @@ def strip_line(line):
 
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE):
+	if counter > 4:
+		show_full_dates = 4
+	else:
+		show_full_dates = counter
         get_log_file_start_date(LOG_FILE, oom_date_count)
 	date_check(oom_date_count)
         if counter > 1: # if oom invoked then print
-                neat_oom_invoke()
-                for i in range(1, counter):
+                # neat_oom_invoke()
+                for i in range(1, show_full_dates):
                         print "-" * 40
                         print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
                         print "Sytem RAM: {0:14} MB".format(system_resources())
@@ -110,7 +114,17 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 	print "Log File Start date: %s " % (", ".join(first_line))
 	print "Log File End Date  : %s " % (", ".join(last_line))
 	print ""
-        print "Number of OOM occurances in log file: %s " % (len(oom_date_count))
+	if len(oom_date_count) > 4:
+		neat_oom_invoke()
+        	print "Number of OOM occurances in log file: %s " % (len(oom_date_count))
+		print ""
+		print "Note:"
+		print "Only Showing first 3 OOM occurrences due to HIGH number of times its been invoked"
+	elif len(oom_date_count) <=4:
+		neat_oom_invoke()
+		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
+	else:
+		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
         print ""
 	print ""
 
