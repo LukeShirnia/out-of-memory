@@ -193,6 +193,7 @@ def OOM_record(LOG_FILE):
     elif record_oom_true_false and killed:
       killed = killed.group(1)
       killed = strip_line(killed)
+      killed = killed.split(",")[-1]
       killed = killed.strip("0123456789 ")
       killed_services[counter-1].append(killed)
   inLogFile.close()
