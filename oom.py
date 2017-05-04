@@ -8,12 +8,24 @@ import re
 import gzip
 import collections
 
+class bcolors:
+    HEADER = '\033[95m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    PURPLE = '\033[35m'
+    LIGHTRED = '\033[91m'
+    CYAN = '\033[36m'
+    UNDERLINE = '\033[4m'
+
 total_individual = []
 CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 def print_header():
-        print "-" * 40
+        print bcolors.CYAN + "-" * 40 + bcolors.ENDC
         #print ""
         print "      _____ _____ _____ "
         print "     |     |     |     |"
@@ -22,14 +34,13 @@ def print_header():
         #print ""
         print "     Out Of Memory Analyser"
         print ""
-        print "-" * 40
+        print bcolors.CYAN + "-" * 40 + bcolors.ENDC
 
 def neat_oom_invoke():
-        print "*" * 50
-        print "         !!!!OOM ISSUE!!!!"
+        print bcolors.RED + "*" * 50 + bcolors.ENDC
+        print bcolors.RED + "         !!!!OOM ISSUE!!!!" + bcolors.ENDC
 #        print "This device HAS run out of memory recently"
-        print "*" * 50
-        print ""
+        print bcolors.RED + "*" * 50 + bcolors.ENDC
     #    print ""
 
 def dates_invoked(dates):
@@ -78,7 +89,6 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
         get_log_file_start_date(LOG_FILE, oom_date_count)
 	date_check(oom_date_count)
         if counter > 1: # if oom invoked then print
-                # neat_oom_invoke()
                 for i in range(1, show_full_dates):
                         print "-" * 40
                         print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
@@ -91,8 +101,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                         for x in service_value_list[i]:
                                 print "Service: {0:20}  {1} MB ".format(x[0], x[1])
                         print "-" * 40
-                        print ""
-                        print ""
+                        #print ""
         else:
                 print "-" * 28
                 print "OOM has NOT occured recently!"
@@ -126,7 +135,6 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 	else:
 		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
         print ""
-	print ""
 
 
 # this function processes each line and saves the rss value and process name .eg (51200, apache)
