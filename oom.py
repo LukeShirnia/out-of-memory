@@ -69,9 +69,12 @@ def strip_line(line):
    return line
 
 
-def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list):
+def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE):
         if counter > 1: # if oom invoked then print
                 neat_oom_invoke()
+		get_log_file_start_date(LOG_FILE)
+		print "Number of OOM occurances in date range: %s " % (len(oom_date_count))
+		print ""
                 # print "Dates OOM Occured"
                 for i in range(1, counter):
                         print "-" * 40
@@ -92,10 +95,18 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                 print "OOM has NOT occured recently!"
                 print ""
 
-#def service_count(line):
-#        value = line.split()[-1:]
-#        if len(value) == 1:
-#                return value
+def  get_log_file_start_date(LOG_FILE): #function gets the start and end date of the current log file
+	normal_file = (False if LOG_FILE.endswith('.gz') else True)
+	inLogFile = openfile(LOG_FILE, normal_file)
+	first_line = inLogFile.readline().split()[0:3]
+	lineList = inLogFile.readlines()
+	inLogFile.close()
+	last_line = (lineList[len(lineList)-1])
+	last_line = last_line.split()[0:3]
+	print "Log file Used: %s" % (LOG_FILE)
+	print "Log File Start date %s " % (", ".join(first_line))
+	print "Log File End Date   %s " % (", ".join(last_line))
+	print ""
 
 
 # this function processes each line and saves the rss value and process name .eg (51200, apache)
@@ -160,6 +171,7 @@ def OOM_record(LOG_FILE):
   record = False
   record_oom_true_false = False
   counter = 1
+#  get_log_file_start_date(inLogFile)  # get the start and end date of log file
   for line in inLogFile:
     killed = re.search("Killed process (.*) total", line)
     if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
@@ -197,7 +209,7 @@ def OOM_record(LOG_FILE):
       killed = killed.strip("0123456789 ")
       killed_services[counter-1].append(killed)
   inLogFile.close()
-  check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list)
+  check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE)
 
 
 ###### Start script
