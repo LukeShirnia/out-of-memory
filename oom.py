@@ -6,6 +6,7 @@ from sys import argv
 import platform
 import re
 import gzip
+import collections
 
 total_individual = []
 CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
@@ -71,6 +72,7 @@ def strip_line(line):
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE):
         get_log_file_start_date(LOG_FILE, oom_date_count)
+	date_check(oom_date_count)
         if counter > 1: # if oom invoked then print
                 neat_oom_invoke()
                 for i in range(1, counter):
@@ -214,7 +216,29 @@ def OOM_record(LOG_FILE):
       killed_services[counter-1].append(killed)
   inLogFile.close()
   check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE)
+  #####################################################################################################################
 
+def date_check(oom_date_count):
+	dates_test = []
+	for p in oom_date_count:
+        	time_check = p[-1]
+	        time_check = time_check.split(":")[0:1]
+	        time_check = ":".join(time_check)
+	        p = p[0:2]
+	        p = " ".join(p)
+		p = "Date: %s, Hour: %s" % (p, time_check)
+	        dates_test.append(p)
+	dates_and_hour =  collections.Counter(dates_test)
+	list_of_dates = []
+	for date in dates_test:
+		string_of_dates = '%s : %d' % (date, dates_and_hour[date])
+		list_of_dates.append(string_of_dates)
+	list_of_dates = list(set(list_of_dates))
+	print "Date                     Occurances"
+	print "-----------------------------------"
+	for dates in list_of_dates:
+		print dates
+	print ""
 
 ###### Start script
 print_header()
