@@ -13,12 +13,12 @@ Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 def print_header():
         print "-" * 40
-        print ""
+        #print ""
         print "      _____ _____ _____ "
         print "     |     |     |     |"
         print "     |  |  |  |  | | | |"
         print "     |_____|_____|_|_|_|"
-        print ""
+        #print ""
         print "     Out Of Memory Analyser"
         print ""
         print "-" * 40
@@ -26,7 +26,7 @@ def print_header():
 def neat_oom_invoke():
         print "*" * 50
         print "         !!!!OOM ISSUE!!!!"
-        print "This device HAS run out of memory recently"
+#        print "This device HAS run out of memory recently"
         print "*" * 50
         print ""
         print ""
@@ -70,12 +70,9 @@ def strip_line(line):
 
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE):
+        get_log_file_start_date(LOG_FILE, oom_date_count)
         if counter > 1: # if oom invoked then print
                 neat_oom_invoke()
-		get_log_file_start_date(LOG_FILE)
-		print "Number of OOM occurances in date range: %s " % (len(oom_date_count))
-		print ""
-                # print "Dates OOM Occured"
                 for i in range(1, counter):
                         print "-" * 40
                         print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
@@ -91,11 +88,12 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                         print ""
                         print ""
         else:
-                print ""
+                print "-" * 28
                 print "OOM has NOT occured recently!"
-                print ""
+                print "-" * 28
+		print ""
 
-def  get_log_file_start_date(LOG_FILE): #function gets the start and end date of the current log file
+def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
 	normal_file = (False if LOG_FILE.endswith('.gz') else True)
 	inLogFile = openfile(LOG_FILE, normal_file)
 	first_line = inLogFile.readline().split()[0:3]
@@ -103,9 +101,15 @@ def  get_log_file_start_date(LOG_FILE): #function gets the start and end date of
 	inLogFile.close()
 	last_line = (lineList[len(lineList)-1])
 	last_line = last_line.split()[0:3]
-	print "Log file Used: %s" % (LOG_FILE)
-	print "Log File Start date %s " % (", ".join(first_line))
-	print "Log File End Date   %s " % (", ".join(last_line))
+	print ""
+	print "Log Information"
+	print "---------------"
+	print "Log file Used      : %s" % (LOG_FILE)
+	print "Log File Start date: %s " % (", ".join(first_line))
+	print "Log File End Date  : %s " % (", ".join(last_line))
+	print ""
+        print "Number of OOM occurances in log file: %s " % (len(oom_date_count))
+        print ""
 	print ""
 
 
