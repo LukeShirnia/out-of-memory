@@ -33,15 +33,15 @@ def print_header():
         print "     |_____|_____|_|_|_|"
         #print ""
         print "     Out Of Memory Analyser"
-        print ""
+        #print ""
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
 
 def neat_oom_invoke():
-        print bcolors.RED + "*" * 50 + bcolors.ENDC
-        print bcolors.RED + "         !!!!OOM ISSUE!!!!" + bcolors.ENDC
+#        print bcolors.RED + "*" * 50 + bcolors.ENDC
+        print bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" + bcolors.ENDC
 #        print "This device HAS run out of memory recently"
-        print bcolors.RED + "*" * 50 + bcolors.ENDC
-    #    print ""
+#        print bcolors.RED + "*" * 50 + bcolors.ENDC
+        print ""
 
 def dates_invoked(dates):
         global all_dates
@@ -91,13 +91,15 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
         if counter > 1: # if oom invoked then print
                 for i in range(1, show_full_dates):
                         print "-" * 40
-                        print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
-                        print "Sytem RAM: {0:14} MB".format(system_resources())
-                        print "Estimated RAM at OOM: %s MB" % (sum(total_rss_per_incident[i] * 4 ) / 1024)
-                        print "Services Killed:      %s " % (", ".join(killed_services[i]))
-                        print "-" * 40
-                        print "Top 5 RAM Consumers at time of OOM:"
-                        print "-" * 40
+			#print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
+                        print bcolors.YELLOW + "Date OOM occured:       " + bcolors.ENDC + bcolors.CYAN + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
+                        print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
+                        print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
+                        print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
+#                        print "-" * 40
+			print ""
+                        print bcolors.UNDERLINE + "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC
+#                        print "-" * 40
                         for x in service_value_list[i]:
                                 print "Service: {0:20}  {1} MB ".format(x[0], x[1])
                         print "-" * 40
@@ -117,18 +119,16 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 	last_line = (lineList[len(lineList)-1])
 	last_line = last_line.split()[0:3]
 	print ""
-	print "Log Information"
-	print "---------------"
-	print "Log file Used      : %s" % (LOG_FILE)
-	print "Log File Start date: %s " % (", ".join(first_line))
-	print "Log File End Date  : %s " % (", ".join(last_line))
+	print bcolors.UNDERLINE + "Log Information" +bcolors.ENDC
+#	print "---------------"
+	print bcolors.GREEN + "Log File  : " + bcolors.YELLOW  + " %s " % (LOG_FILE) + bcolors.ENDC
+	print bcolors.GREEN + "Start date: " + bcolors.ENDC + bcolors.YELLOW  + " %s " % (", ".join(first_line)) + bcolors.ENDC
+	print bcolors.GREEN + "End Date  : " + bcolors.ENDC + bcolors.YELLOW  + " %s " % (", ".join(last_line)) + bcolors.ENDC
 	print ""
 	if len(oom_date_count) > 4:
 		neat_oom_invoke()
-        	print "Number of OOM occurances in log file: %s " % (len(oom_date_count))
-		print ""
-		print "Note:"
-		print "Only Showing first 3 OOM occurrences due to HIGH number of times its been invoked"
+        	print "Number of OOM occurances in log file: "  + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
+		print bcolors.HEADER + "Note: " + bcolors.ENDC + "Only Showing first " + bcolors.GREEN + "3 " +bcolors.ENDC + "OOM occurrences of the" + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
 	elif len(oom_date_count) <=4:
 		neat_oom_invoke()
 		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
@@ -256,8 +256,8 @@ def date_check(oom_date_count):
 		string_of_dates = '%s : %d' % (date, dates_and_hour[date])
 		list_of_dates.append(string_of_dates)
 	list_of_dates = list(set(list_of_dates))
-	print "Date                     Occurances"
-	print "-----------------------------------"
+	print bcolors.UNDERLINE + "Date" + bcolors.ENDC + "                     " + bcolors.UNDERLINE + "Occurances" + bcolors.ENDC
+	#print "-----------------------------------"
 	for dates in list_of_dates:
 		print dates
 	print ""
