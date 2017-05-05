@@ -271,8 +271,10 @@ if len(argv) == 1:
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
                 OOM_record("/var/log/messages")
+		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
                 OOM_record("/var/log/syslog")
+		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         else:
                 print "Unsupported OS"
 elif len(argv) == 2:
@@ -280,6 +282,7 @@ elif len(argv) == 2:
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
                 OOM_record(OOM_LOG)
+		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
                 OOM_record(OOM_LOG)
         else:
