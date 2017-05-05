@@ -90,9 +90,10 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 	date_check(oom_date_count)
         if counter > 1: # if oom invoked then print
                 for i in range(1, show_full_dates):
-                        print "-" * 40
-			#print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
-                        print bcolors.YELLOW + "Date OOM occured:       " + bcolors.ENDC + bcolors.CYAN + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
+                        print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+			# print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
+                        # print bcolors.YELLOW + "Date OOM occured:       " + bcolors.ENDC + bcolors.CYAN + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
+                        print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
                         print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
                         print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
                         print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
@@ -102,8 +103,8 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 #                        print "-" * 40
                         for x in service_value_list[i]:
                                 print "Service: {0:20}  {1} MB ".format(x[0], x[1])
-                        print "-" * 40
-                        #print ""
+                        #print "-" * 40
+                        print ""
         else:
                 print "-" * 28
                 print "OOM has NOT occured recently!"
