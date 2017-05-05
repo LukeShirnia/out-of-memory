@@ -239,7 +239,6 @@ def OOM_record(LOG_FILE):
       killed_services[counter-1].append(killed)
   inLogFile.close()
   check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE)
-  #####################################################################################################################
 
 def date_check(oom_date_count):
 	dates_test = []
@@ -249,7 +248,7 @@ def date_check(oom_date_count):
 	        time_check = ":".join(time_check)
 	        p = p[0:2]
 	        p = " ".join(p)
-		p = "Date: %s, Hour: %s" % (p, time_check)
+		p = "%s, Hour: %s" % (p, time_check)
 	        dates_test.append(p)
 	dates_and_hour =  collections.Counter(dates_test)
 	list_of_dates = []
@@ -257,10 +256,12 @@ def date_check(oom_date_count):
 		string_of_dates = '%s : %d' % (date, dates_and_hour[date])
 		list_of_dates.append(string_of_dates)
 	list_of_dates = list(set(list_of_dates))
+	# list_of_dates.sort(key=lambda x: int(x[4]))
+	list_of_dates.sort()
 	print bcolors.UNDERLINE + "Date" + bcolors.ENDC + "                     " + bcolors.UNDERLINE + "Occurances" + bcolors.ENDC
 	#print "-----------------------------------"
 	for dates in list_of_dates:
-		print dates
+		print "Date: ", dates
 	print ""
 
 ###### Start script
