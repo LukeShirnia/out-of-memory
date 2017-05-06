@@ -93,7 +93,8 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
         get_log_file_start_date(LOG_FILE, oom_date_count)
         if counter > 1: # if oom invoked then print
 		date_check(oom_date_count)
-                for i in range(1, show_full_dates):
+                # for i in range(1, show_full_dates):
+                for i in (1, 2, counter - 1):
                         print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 			# print "Date OOM occured:    {0}".format(date_format[i - 1])
                         # print bcolors.YELLOW + "Date OOM occured:       " + bcolors.ENDC + bcolors.CYAN + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
@@ -236,7 +237,8 @@ def date_check(oom_date_count): #this function is used to produce a list of date
         print ""
 	print ""
         if len(oom_date_count) > 4:
-		 print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing first " + bcolors.GREEN + "3 " +bcolors.ENDC + "OOM occurrences of the" + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC		
+		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurences" % (len(oom_date_count)) + bcolors.ENDC		
+		print "Showing the " + bcolors.GREEN  + "1st" + bcolors.ENDC + ", " + bcolors.GREEN  + "2nd" + bcolors.ENDC + " and" + bcolors.GREEN + " last" + bcolors.ENDC
 
 
 def OOM_record(LOG_FILE):
