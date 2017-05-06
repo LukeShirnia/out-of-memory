@@ -6,8 +6,8 @@ from sys import argv
 import platform
 import re
 import gzip
-import collections
 import datetime
+import collections
 
 class bcolors:
     HEADER = '\033[95m'
@@ -38,7 +38,10 @@ def print_header():
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
 
 def neat_oom_invoke():
+#        print bcolors.RED + "*" * 50 + bcolors.ENDC
         print bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" + bcolors.ENDC
+#        print "This device HAS run out of memory recently"
+#        print bcolors.RED + "*" * 50 + bcolors.ENDC
         print ""
 
 def dates_invoked(dates):
@@ -80,12 +83,9 @@ def strip_line(line):
 
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE):
-	date_format = []
-        for p in oom_date_count:
-                p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
-                date_format.append(p)
 	if counter > 4:
 		show_full_dates = 4
+		oom_date_count=[oom_date_count[0], oom_date_count[1], oom_date_count[-1]]
 	else:
 		show_full_dates = counter
         get_log_file_start_date(LOG_FILE, oom_date_count)
@@ -93,16 +93,19 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
         if counter > 1: # if oom invoked then print
                 for i in range(1, show_full_dates):
                         print bcolors.BOLD + "-" * 40 + bcolors.ENDC
-			# print "Date OOM occured:    {0}".format(date_format[i - 1])
+			# print "Date OOM occured:    %s" % (", ".join(oom_date_count[i - 1]))
                         # print bcolors.YELLOW + "Date OOM occured:       " + bcolors.ENDC + bcolors.CYAN + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
-                        print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(date_format[i - 1]) + bcolors.ENDC
+                        print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
                         print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
                         print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
                         print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
+#                        print "-" * 40
 			print ""
                         print bcolors.UNDERLINE + "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC
+#                        print "-" * 40
                         for x in service_value_list[i]:
                                 print "Service: {0:20}  {1} MB ".format(x[0], x[1])
+                        #print "-" * 40
                         print ""
         else:
                 print "-" * 28
@@ -185,32 +188,8 @@ def find_rss_column(line):
 			column = int(i+1)
 			return column
 
-def date_time(line):                   # return a date object
-	date_of_oom = line.split()[0:3]
-	date_of_oom = " ".join(date_of_oom)
-	date_check = datetime.datetime.strptime(date_of_oom, "%b %d %H:%M:%S")
-	return date_check
-
-def date_check(oom_date_count):
-        dates_test = []
-        oom_date_count.sort()
-        for p in oom_date_count:
-                p = datetime.datetime.strftime(p, '%b %d %H')
-                dates_test.append(p)
-        print bcolors.YELLOW + bcolors.UNDERLINE + "KEY" + bcolors.ENDC + bcolors.YELLOW
-        print "D = Dates"
-        print "H = Hour" + bcolors.ENDC
-        # print "#O = Number of Occurences" + bcolors.ENDC
-        print ""
-        print bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " + bcolors.UNDERLINE + "H" + bcolors.ENDC #  + "  " + bcolors.UNDERLINE  + bcolors.UNDERLINE + "#O" + bcolors.ENDC
-        for i in dates_test:
-                print i
-        #print "-----------------------------------"
-        print ""
-
-
-
 def OOM_record(LOG_FILE):
+  date_test_list = []
   oom_date_count = []
   running_service = []
   list_of_values = {}
@@ -234,7 +213,11 @@ def OOM_record(LOG_FILE):
       list_of_values[counter] = []
       record = True
       record_oom_true_false = False
-      oom_date_count.append(date_time(line))
+      oom_count_plus_one = line.split()[0:3]
+      oom_count_plus_one_test = " ".join(oom_count_plus_one)
+      date_test = datetime.datetime.strptime(oom_count_plus_one_test, "%b %d %H:%M:%S") 
+      date_test_list.append(date_test)
+      oom_date_count.append(oom_count_plus_one)
       line = strip_line(line)
       column_number = find_rss_column(line.split())
     elif "Out of memory: Kill process" in line.strip() or len(line.split()) < 14 and record == True:
@@ -250,6 +233,7 @@ def OOM_record(LOG_FILE):
       counter += 1
     elif record:
       line = strip_line(line)
+      #count_service = service_count(line)
       list_of_values[counter].append(save_values(line, column_number)) #service rss calulation initiation
       rss_value = strip_rss(line, column_number)
       total_rss[counter].append(rss_value) # calculate total value of all processes
@@ -261,7 +245,34 @@ def OOM_record(LOG_FILE):
       killed_services[counter-1].append(killed)
   inLogFile.close()
   check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE)
+  date_test_list.sort()
+#  print date_test_list
+  for g in date_test_list:
+    print g.strftime('%b %d %H')
 
+def date_check(oom_date_count):
+	dates_test = []
+	for p in oom_date_count:
+        	time_check = p[-1]
+	        time_check = time_check.split(":")[0:1]
+	        time_check = ":".join(time_check)
+	        p = p[0:2]
+	        p = " ".join(p)
+		p = "%s, Hour: %s" % (p, time_check)
+	        dates_test.append(p)
+	dates_and_hour =  collections.Counter(dates_test)
+	list_of_dates = []
+	for date in dates_test:
+		string_of_dates = '%s : %d' % (date, dates_and_hour[date])
+		list_of_dates.append(string_of_dates)
+	list_of_dates = list(set(list_of_dates))
+	# list_of_dates.sort(key=lambda x: int(x[4]))
+	list_of_dates.sort()
+	print bcolors.UNDERLINE + "Date" + bcolors.ENDC + "             " + bcolors.UNDERLINE + "Occurances" + bcolors.ENDC
+	#print "-----------------------------------"
+	for dates in list_of_dates:
+		print dates
+	print ""
 
 ###### Start script
 print_header()
@@ -292,3 +303,5 @@ else:
         print "Try again"
         print len(argv)
 
+
+# test
