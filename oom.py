@@ -91,8 +91,8 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 	else:
 		show_full_dates = counter
         get_log_file_start_date(LOG_FILE, oom_date_count)
-	date_check(oom_date_count)
         if counter > 1: # if oom invoked then print
+		date_check(oom_date_count)
                 for i in range(1, show_full_dates):
                         print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 			# print "Date OOM occured:    {0}".format(date_format[i - 1])
@@ -131,7 +131,7 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 		neat_oom_invoke()
         	print "Number of OOM occurances in log file: "  + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
 		print bcolors.HEADER + "Note: " + bcolors.ENDC + "Only Showing first " + bcolors.GREEN + "3 " +bcolors.ENDC + "OOM occurrences of the" + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
-	elif len(oom_date_count) <=4:
+	elif len(oom_date_count) <=4 and len(oom_date_count) > 0:
 		neat_oom_invoke()
 		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
 	else:
