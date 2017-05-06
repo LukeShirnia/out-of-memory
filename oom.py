@@ -312,7 +312,10 @@ elif len(argv) == 2:
         script, OOM_LOG = argv
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
-                OOM_record(OOM_LOG)
+		try:
+	                OOM_record(OOM_LOG)
+		except:
+			print "File doesnt appear to exist"
 		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
                 OOM_record(OOM_LOG)
