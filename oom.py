@@ -8,6 +8,7 @@ import re
 import gzip
 import collections
 import datetime
+import operator
 
 class bcolors:
     HEADER = '\033[95m'
@@ -25,6 +26,7 @@ total_individual = []
 CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
+
 def print_header():
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
         #print ""
@@ -37,15 +39,11 @@ def print_header():
         #print ""
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
 
+
 def neat_oom_invoke():
         print bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" + bcolors.ENDC
         print ""
 
-def dates_invoked(dates):
-        global all_dates
-        all_dates = []
-        date_of_first_invoke = line.split()[0:3]
-        all_dates.append(date_of_first_invoke)
 
 def os_check():
         os_platform = platform.system()
@@ -56,6 +54,7 @@ def os_check():
         else:
                 print "Stop Using a Rubbish OS!!"
 
+
 def system_resources():
    with open("/proc/meminfo", "r") as meminfo:
       for lines in meminfo:
@@ -64,13 +63,16 @@ def system_resources():
             system_memory = memory_value / 1024
             return system_memory
 
+
 def strip_rss(line, column_number):
    line = line.split()
    value = int(line[column_number-1])
    return value
 
+
 def add_rss(total_rss):
    return sum((total_rss) * 4 ) / 1024
+
 
 def strip_line(line):
    for ch in ["[","]","}","{","'", "(",")"]:
@@ -110,6 +112,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                 print "-" * 28
 		print ""
 
+
 def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
 	normal_file = (False if LOG_FILE.endswith('.gz') else True)
 	inLogFile = openfile(LOG_FILE, normal_file)
@@ -120,7 +123,6 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 	last_line = last_line.split()[0:3]
 	print ""
 	print bcolors.UNDERLINE + "Log Information" +bcolors.ENDC
-#	print "---------------"
 	print bcolors.GREEN + "Log File  : " + bcolors.YELLOW  + " %s " % (LOG_FILE) + bcolors.ENDC
 	print bcolors.GREEN + "Start date: " + bcolors.ENDC + bcolors.YELLOW  + " %s " % (", ".join(first_line)) + bcolors.ENDC
 	print bcolors.GREEN + "End Date  : " + bcolors.ENDC + bcolors.YELLOW  + " %s " % (", ".join(last_line)) + bcolors.ENDC
@@ -145,6 +147,7 @@ def save_values(line, column_number):
                 string = cols[column_number-1], cols[-1]
                 return string
 
+
 # this function takes the full list of saved processes and find each unique occurance of a process
 def find_unique_services(list_of_values):
         new_list = []
@@ -153,6 +156,7 @@ def find_unique_services(list_of_values):
                 new_list.append(new_list_value)
         new_list = list(set(new_list))
         return new_list
+
 
 # add up the rss value of the unique service list
 def add_rss_for_processes(unique, list_of_values):
@@ -171,6 +175,7 @@ def add_rss_for_processes(unique, list_of_values):
         return total_service_usage
 
 
+# used to find out if a compressed file is being used or not
 def openfile(filename, normal_file):
 	if normal_file:
 		return open(filename, "r")
@@ -179,35 +184,56 @@ def openfile(filename, normal_file):
 	else:
 		return open(filename, "r")
 
-def find_rss_column(line):
+
+def find_rss_column(line): #function to find the column number of rss header (for OS compatibility)
 	for i, word in enumerate(line):
 		if word == "rss":
 			column = int(i+1)
 			return column
 
+
 def date_time(line):                   # return a date object
 	date_of_oom = line.split()[0:3]
 	date_of_oom = " ".join(date_of_oom)
 	date_check = datetime.datetime.strptime(date_of_oom, "%b %d %H:%M:%S")
+	# date_check = reset(date_check)
 	return date_check
 
-def date_check(oom_date_count):
+
+def strip_time(date_time): # remove mins and seconds from date and time
+	return date_time + datetime.timedelta(hours = 1, minutes = -date_time.minute, seconds = -date_time.second)
+
+	
+def date_time_counter_split(dates_sorted): # split the date and count ('May 12': 1) into 2 strings and back into 1 string
+	sorted_dates = []
+	for i in dates_sorted:
+		date = datetime.datetime.strptime(i[0], "%m-%d %H")
+		date = datetime.datetime.strftime(date, "%b %d %H")	
+		occurences = i[1]
+		sorted_dates.append(date + " " + str(occurences))
+	return sorted_dates
+		
+		
+def date_check(oom_date_count): #this function is used to produce a list of dates +inc hour of every oom occurence in the log file
         dates_test = []
+	dates_sorted = []
         oom_date_count.sort()
         for p in oom_date_count:
-                p = datetime.datetime.strftime(p, '%b %d %H')
-                dates_test.append(p)
+		time = strip_time(p)
+		time = datetime.datetime.strftime(p, '%m-%d %H')
+                dates_test.append(time)
+	dates_test = collections.Counter(dates_test) # uniq occurences
+	dates_sorted = sorted(dates_test.iteritems())
+	dates_test = date_time_counter_split(dates_sorted)
         print bcolors.YELLOW + bcolors.UNDERLINE + "KEY" + bcolors.ENDC + bcolors.YELLOW
         print "D = Dates"
-        print "H = Hour" + bcolors.ENDC
-        # print "#O = Number of Occurences" + bcolors.ENDC
+        print "H = Hour"
+        print "O = Number of Occurences" + bcolors.ENDC
         print ""
-        print bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " + bcolors.UNDERLINE + "H" + bcolors.ENDC #  + "  " + bcolors.UNDERLINE  + bcolors.UNDERLINE + "#O" + bcolors.ENDC
-        for i in dates_test:
-                print i
-        #print "-----------------------------------"
+        print bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " + bcolors.UNDERLINE + "H" + bcolors.ENDC +  "  "  + bcolors.UNDERLINE  + bcolors.UNDERLINE + "O" + bcolors.ENDC
+	for value in dates_test:
+		print value
         print ""
-
 
 
 def OOM_record(LOG_FILE):
