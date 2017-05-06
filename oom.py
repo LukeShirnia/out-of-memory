@@ -130,7 +130,7 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 	if len(oom_date_count) > 4:
 		neat_oom_invoke()
         	print "Number of OOM occurances in log file: "  + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
-		print bcolors.HEADER + "Note: " + bcolors.ENDC + "Only Showing first " + bcolors.GREEN + "3 " +bcolors.ENDC + "OOM occurrences of the" + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
+#		print bcolors.HEADER + "Note: " + bcolors.ENDC + "Only Showing first " + bcolors.GREEN + "3 " +bcolors.ENDC + "OOM occurrences of the" + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
 	elif len(oom_date_count) <=4 and len(oom_date_count) > 0:
 		neat_oom_invoke()
 		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
@@ -234,6 +234,9 @@ def date_check(oom_date_count): #this function is used to produce a list of date
 	for value in dates_test:
 		print value
         print ""
+	print ""
+        if len(oom_date_count) > 4:
+		 print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing first " + bcolors.GREEN + "3 " +bcolors.ENDC + "OOM occurrences of the" + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC		
 
 
 def OOM_record(LOG_FILE):
