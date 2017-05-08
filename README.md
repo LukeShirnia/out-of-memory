@@ -54,6 +54,7 @@ The script currently works on the following OS:
 
 
 ### Example Output
+The following example shows the output of the script when run against a compressed log file in a "non standard" directory:
 
 ```
 ----------------------------------------
@@ -122,5 +123,39 @@ Service: mysqld                197 MB
 Service: sshd                  24 MB
 Service: driveclient           16 MB
 Service: rackspace-monit       15 MB
+----------------------------------------
+```
+<br />
+
+<br />
+
+### Example 
+This example shows the output when NON oom has occured in the log file. NO options were passed with the running of this script (Method 1 was used) 
+
+```
+----------------------------------------
+      _____ _____ _____ 
+     |     |     |     |
+     |  |  |  |  | | | |
+     |_____|_____|_|_|_|
+     Out Of Memory Analyser
+----------------------------------------
+
+Log Information
+Log File  :  /var/log/messages 
+Start date:  May, 7, 08:08:18 
+End Date  :  May, 8, 14:30:01 
+
+
+----------------------------------------
+OOM has NOT occured in specified log file!
+----------------------------------------
+
+Other Logs worth checking:
+/var/log/messages-20170416
+/var/log/messages-20170424
+/var/log/messages-20170430
+/var/log/messages-20170507
+
 ----------------------------------------
 ```
