@@ -31,6 +31,8 @@ curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigatio
 ```
 <br />
 
+<br />
+
 The script currently works on the following OS:
 
 *  RedHat 6,7
