@@ -33,13 +33,13 @@ curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigatio
 
 The script currently works on the following OS:
 
-..*  RedHat 6,7
+*  RedHat 6,7
 
-..*  CentOS 6,7
+*  CentOS 6,7
 
 ***  Redhat/CentOS 5 - Only works on some devices, the system does not log the same and you need to specify python2.6 or 2.6 
 
-..*  Ubuntu 14.04LTS
+*  Ubuntu 14.04LTS
 
 Testing on Ubuntu and Debian ongoing. 
 
