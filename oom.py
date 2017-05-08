@@ -6,7 +6,6 @@ from sys import argv
 import platform
 import re
 import gzip
-import collections
 import datetime
 import operator
 
@@ -93,11 +92,8 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
         get_log_file_start_date(LOG_FILE, oom_date_count)
         if counter > 1: # if oom invoked then print
 		date_check(oom_date_count)
-                # for i in range(1, show_full_dates):
                 for i in (1, 2, counter - 1):
                         print bcolors.BOLD + "-" * 40 + bcolors.ENDC
-			# print "Date OOM occured:    {0}".format(date_format[i - 1])
-                        # print bcolors.YELLOW + "Date OOM occured:       " + bcolors.ENDC + bcolors.CYAN + "{0} ".format(", ".join(oom_date_count[i - 1])) + bcolors.ENDC
                         print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(date_format[i - 1]) + bcolors.ENDC
                         print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
                         print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
@@ -131,7 +127,6 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 	if len(oom_date_count) > 4:
 		neat_oom_invoke()
         	print "Number of OOM occurances in log file: "  + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
-#		print bcolors.HEADER + "Note: " + bcolors.ENDC + "Only Showing first " + bcolors.GREEN + "3 " +bcolors.ENDC + "OOM occurrences of the" + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
 	elif len(oom_date_count) <=4 and len(oom_date_count) > 0:
 		neat_oom_invoke()
 		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
@@ -197,7 +192,6 @@ def date_time(line):                   # return a date object
 	date_of_oom = line.split()[0:3]
 	date_of_oom = " ".join(date_of_oom)
 	date_check = datetime.datetime.strptime(date_of_oom, "%b %d %H:%M:%S")
-	# date_check = reset(date_check)
 	return date_check
 
 
@@ -223,7 +217,8 @@ def date_check(oom_date_count): #this function is used to produce a list of date
 		time = strip_time(p)
 		time = datetime.datetime.strftime(p, '%m-%d %H')
                 dates_test.append(time)
-	dates_test = collections.Counter(dates_test) # uniq occurences
+#	dates_test = collections.Counter(dates_test) # uniq occurences ---- does not working with python 2.6.x
+	dates_test = dict((i, dates_test.count(i)) for i in dates_test)
 	dates_sorted = sorted(dates_test.iteritems())
 	dates_test = date_time_counter_split(dates_sorted)
         print bcolors.YELLOW + bcolors.UNDERLINE + "KEY" + bcolors.ENDC + bcolors.YELLOW
