@@ -15,13 +15,13 @@ There are currently 2 usage methods.
 <br />
 
 ### Method 1
-The first and most straight foward is simply running the command below:
+The first and most straight foward is simply running the command below...this will use the standard and current system log file:
 
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python
 ```
 ### Method 2
-You can also specify a specific log file if you are looking into historical data, or the logs have been rotated. 
+You can also specify a different log file if you are looking into historical data (such as compressed or logs have been rotated):
 
 Note: This WILL work with compressed log files!
 
