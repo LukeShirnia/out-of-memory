@@ -106,9 +106,9 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                                 print "Service: {0:20}  {1} MB ".format(x[0], x[1])
                         print ""
         else:
-                print "-" * 28
-                print "OOM has NOT occured recently!"
-                print "-" * 28
+                print "-" * 40
+                print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
+                print "-" * 40
 		print ""
 		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
 		find_all_logs(OOM_LOG) # print similar log files to check for an issue
