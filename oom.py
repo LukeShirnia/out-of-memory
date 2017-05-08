@@ -38,7 +38,8 @@ def print_header():
         #print ""
         print "     Out Of Memory Analyser"
         print ""
-	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC + bcolors.RED + " If system OOMs too viciously, there may be nothing logged!"
+	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC 
+	print bcolors.RED + "If system OOMs too viciously, there may be nothing logged!"
 	print "Do NOT take this script as FACT, investigate further" + bcolors.ENDC
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
 
