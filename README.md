@@ -72,11 +72,18 @@ End Date  :  Feb, 19, 00:44:24
 ######## OOM ISSUE ########
 
 Number of OOM occurances in log file:  68 
-Note: Only Showing first 3 OOM occurrences of the 68 
 
-Date                     Occurances
-Date: Feb 12, Hour: 10 : 68
+KEY
+D = Dates
+H = Hour
+O = Number of Occurences
 
+D      H  O
+Feb 12 10 68
+
+
+Note: Only Showing: 3 of the 68 occurences
+Showing the 1st, 2nd and last
 ----------------------------------------
 Mar, 9, 10:58:55
 Sytem RAM:            987 MB
@@ -84,7 +91,6 @@ Estimated RAM at OOM: 1509 MB
 Services Killed:      mysqld, apache
 
 Top 5 RAM Consumers at time of OOM:
-----------------------------------------
 Service: apache2               1370 MB
 Service: mysqld                251 MB
 Service: 4                     59 MB
@@ -98,7 +104,6 @@ Estimated RAM at OOM: 1555 MB
 Services Killed:      mysqld
 
 Top 5 RAM Consumers at time of OOM:
-----------------------------------------
 Service: apache2               1160 MB
 Service: mysqld                230 MB
 Service: driveclient           16 MB
@@ -112,7 +117,6 @@ Estimated RAM at OOM: 1369 MB
 Services Killed:      mysqld
 
 Top 5 RAM Consumers at time of OOM:
-----------------------------------------
 Service: apache2               1041 MB
 Service: mysqld                197 MB
 Service: sshd                  24 MB
