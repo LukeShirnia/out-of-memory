@@ -39,10 +39,10 @@ The script currently works on the following OS:
 
 *  Ubuntu 14.04LTS
 
-***  Redhat/CentOS 5 - Only works on some devices, the system does not log the same and you need to specify python2.6 or 2.6 
+***  Redhat/CentOS 5 - Only works on some devices,AND you need to specify python2.6 or 2.6  ***
 <br />
 
-Testing on Ubuntu and Debian ongoing. 
+*** Testing on Ubuntu and Debian ongoing.  ***
 
 
 
