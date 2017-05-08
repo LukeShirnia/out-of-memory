@@ -9,10 +9,10 @@ The script looks in /var/log/messages or /var/log/syslog and takes the values re
 
 
 
-
+<br />
 
 There are currently 2 usage methods. 
-
+<br />
 
 ### Method 1
 The first and most straight foward is simply running the command below:
