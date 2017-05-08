@@ -8,6 +8,8 @@ import re
 import gzip
 import datetime
 import operator
+import os
+import fnmatch
 
 class bcolors:
     HEADER = '\033[95m'
@@ -108,7 +110,24 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                 print "OOM has NOT occured recently!"
                 print "-" * 28
 		print ""
+		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
+		find_all_logs(OOM_LOG) # print similar log files to check for an issue
+		print ""
 
+
+def find_all_logs(OOM_LOG): # function to find all other similar logs
+    result = []
+    split_log_file_dir = os.path.dirname(OOM_LOG)
+    split_log_file_name = os.path.basename(OOM_LOG)
+    split_log_file_name = split_log_file_name + '*'
+    for root, dirs, files in os.walk(split_log_file_dir):
+        for name in files:
+            if fnmatch.fnmatch(name, split_log_file_name):
+                result.append(os.path.join(root, name))
+    result.sort()
+    for i in result:
+        print i
+    return result
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
 	normal_file = (False if LOG_FILE.endswith('.gz') else True)
@@ -296,10 +315,12 @@ os_check_value = os_check()
 if len(argv) == 1:
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
-                OOM_record("/var/log/messages")
+		OOM_LOG = "/var/log/messages"
+                OOM_record(OOM_LOG)
 		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
-                OOM_record("/var/log/syslog")
+		OOM_LOG = "/var/log/syslog"
+                OOM_record(OOM_LOG)
 		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         else:
                 print "Unsupported OS"
