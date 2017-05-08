@@ -130,7 +130,7 @@ Service: rackspace-monit       15 MB
 <br />
 
 ### Example 
-This example shows the output when NON oom has occured in the log file. NO options were passed with the running of this script (Method 1 was used) 
+This example shows the output when NO oom has occured in the log file. NO options were passed with the running of this script (Method 1 was used) 
 
 ```
 ----------------------------------------
