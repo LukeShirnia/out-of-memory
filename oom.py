@@ -125,8 +125,10 @@ def find_all_logs(OOM_LOG): # function to find all other similar logs
             if fnmatch.fnmatch(name, split_log_file_name):
                 result.append(os.path.join(root, name))
     result.sort()
-    for i in result:
-        print i
+    for i in result: # only print other files that DONT match the current file being analysed
+	if i != OOM_LOG:
+                print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
+	        print i
     return result
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
