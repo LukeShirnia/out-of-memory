@@ -110,26 +110,27 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                 print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
                 print "-" * 40
 		print ""
-		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
 		find_all_logs(OOM_LOG) # print similar log files to check for an issue
 		print ""
 
 
 def find_all_logs(OOM_LOG): # function to find all other similar logs
-    result = []
-    split_log_file_dir = os.path.dirname(OOM_LOG)
-    split_log_file_name = os.path.basename(OOM_LOG)
-    split_log_file_name = split_log_file_name + '*'
-    for root, dirs, files in os.walk(split_log_file_dir):
-        for name in files:
-            if fnmatch.fnmatch(name, split_log_file_name):
-                result.append(os.path.join(root, name))
-    result.sort()
-    for i in result: # only print other files that DONT match the current file being analysed
-	if i != OOM_LOG:
-                print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
-	        print i
-    return result
+	result = []
+	split_log_file_dir = os.path.dirname(OOM_LOG)
+	split_log_file_name = os.path.basename(OOM_LOG)
+	split_log_file_name = split_log_file_name + '*'
+	for root, dirs, files in os.walk(split_log_file_dir):
+        	for name in files:
+	            if fnmatch.fnmatch(name, split_log_file_name):
+			result.append(os.path.join(root, name))
+	result.sort()
+	if len(result) > 1:
+		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
+		while OOM_LOG in result:
+			result.remove(OOM_LOG)	
+		for i in result:
+			print i
+	return result
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
 	normal_file = (False if LOG_FILE.endswith('.gz') else True)
