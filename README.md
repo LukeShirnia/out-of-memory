@@ -62,7 +62,11 @@ The following example shows the output of the script when run against a compress
      |     |     |     |
      |  |  |  |  | | | |
      |_____|_____|_|_|_|
-     Out Of Memory Analyser
+ 
+Out Of Memory Analyser
+
+Disclaimer: If system OOMs too viciously, there may be nothing logged!
+Do NOT take this script as FACT, investigate further
 ----------------------------------------
 
 Log Information
@@ -139,6 +143,9 @@ This example shows the output when NO oom has occured in the log file. NO option
      |  |  |  |  | | | |
      |_____|_____|_|_|_|
      Out Of Memory Analyser
+
+Disclaimer: If system OOMs too viciously, there may be nothing logged!
+Do NOT take this script as FACT, investigate further
 ----------------------------------------
 
 Log Information
