@@ -29,7 +29,7 @@ Replace `/var/log/messages.1` with the log file you wish to analyse.
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python - /var/log/messages.1
 ```
-
+<br />
 
 The script currently works on the following OS:
 
@@ -37,9 +37,10 @@ The script currently works on the following OS:
 
 *  CentOS 6,7
 
-***  Redhat/CentOS 5 - Only works on some devices, the system does not log the same and you need to specify python2.6 or 2.6 
-
 *  Ubuntu 14.04LTS
+
+***  Redhat/CentOS 5 - Only works on some devices, the system does not log the same and you need to specify python2.6 or 2.6 
+<br />
 
 Testing on Ubuntu and Debian ongoing. 
 
