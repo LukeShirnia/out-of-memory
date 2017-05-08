@@ -330,8 +330,11 @@ elif len(argv) == 2:
                 system_rss = system_resources()
 		try:
 	                OOM_record(OOM_LOG)
-		except:
-			print "File doesnt appear to exist"
+		except Exception as error:
+			print ""
+			print "Error:"
+			print error
+			print ""
 		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
                 OOM_record(OOM_LOG)
