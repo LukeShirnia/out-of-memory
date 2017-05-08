@@ -4,7 +4,7 @@
 The following python script can be used to calculate the estimated RSS (RAM) value of each service at the time a kernel invoked OOM killer. At the time of an OOM incident, the system logs the estimated RSS value of each service in its system log, this script will calculate how much RAM the services were "theorietically" trying to use, the total RAM value of all services and how much RAM your system actually has to offer these services. 
 
 
-The script looks in /var/log/messages or /var/log/syslog and takes the values recorded by the system just before the incident occurs. 
+The script looks in `/var/log/messages` or `/var/log/syslog` and takes the values recorded by the system just before the incident occurs. 
 
 
 
