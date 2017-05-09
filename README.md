@@ -160,10 +160,10 @@ OOM has NOT occured in specified log file!
 ----------------------------------------
 
 Other Logs worth checking:
-/var/log/messages-20170416
-/var/log/messages-20170424
-/var/log/messages-20170430
-/var/log/messages-20170507
+/var/log/messages-20170416 - Occurences: 1
+/var/log/messages-20170424 - Occurences: 0
+/var/log/messages-20170430 - Occurences: 5
+/var/log/messages-20170507 - Occurences: 0
 
 ----------------------------------------
 ```
