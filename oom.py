@@ -38,7 +38,7 @@ def print_header():
         #print ""
         print "     Out Of Memory Analyser"
         print ""
-	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC 
+	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC
 	print bcolors.RED + "If system OOMs too viciously, there may be nothing logged!"
 	print "Do NOT take this script as FACT, investigate further" + bcolors.ENDC
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
@@ -108,6 +108,9 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                         for x in service_value_list[i]:
                                 print "Service: {0:20}  {1} MB ".format(x[0], x[1])
                         print ""
+#	elif counter == 1:
+#		OOM_record("/var/log/dmesg")
+#		counter = 0
         else:
                 print "-" * 40
                 print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
@@ -130,7 +133,7 @@ def find_all_logs(OOM_LOG): # function to find all other similar logs
 	if len(result) > 1:
 		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
 		while OOM_LOG in result:
-			result.remove(OOM_LOG)	
+			result.remove(OOM_LOG)
 #		for i in result:
 #			print i
 	return result
@@ -146,7 +149,7 @@ def quick_check_all_logs(results):
 		for line in inLogFile:
 			if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
 				total_occurences += 1
-		print "{0} - Occurences: {1}".format(a, total_occurences)
+		print "{0:26} - Occurences: {1}".format(a, total_occurences)
 
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
@@ -242,12 +245,12 @@ def date_time_counter_split(dates_sorted): # split the date and count ('May 12':
 	sorted_dates = []
 	for i in dates_sorted:
 		date = datetime.datetime.strptime(i[0], "%m-%d %H")
-		date = datetime.datetime.strftime(date, "%b %d %H")	
+		date = datetime.datetime.strftime(date, "%b %d %H")
 		occurences = i[1]
 		sorted_dates.append(date + " " + str(occurences))
 	return sorted_dates
-		
-		
+
+	
 def date_check(oom_date_count): #this function is used to produce a list of dates +inc hour of every oom occurence in the log file
         dates_test = []
 	dates_sorted = []
@@ -271,7 +274,7 @@ def date_check(oom_date_count): #this function is used to produce a list of date
         print ""
 	print ""
         if len(oom_date_count) > 4:
-		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurences" % (len(oom_date_count)) + bcolors.ENDC		
+		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurences" % (len(oom_date_count)) + bcolors.ENDC
 		print "Showing the " + bcolors.GREEN  + "1st" + bcolors.ENDC + ", " + bcolors.GREEN  + "2nd" + bcolors.ENDC + " and" + bcolors.GREEN + " last" + bcolors.ENDC
 
 
