@@ -38,7 +38,7 @@ def print_header():
         #print ""
         print "     Out Of Memory Analyser"
         print ""
-	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC 
+	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC
 	print bcolors.RED + "If system OOMs too viciously, there may be nothing logged!"
 	print "Do NOT take this script as FACT, investigate further" + bcolors.ENDC
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
@@ -130,7 +130,7 @@ def find_all_logs(OOM_LOG): # function to find all other similar logs
 	if len(result) > 1:
 		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
 		while OOM_LOG in result:
-			result.remove(OOM_LOG)	
+			result.remove(OOM_LOG)
 #		for i in result:
 #			print i
 	return result
@@ -237,17 +237,17 @@ def date_time(line):                   # return a date object
 def strip_time(date_time): # remove mins and seconds from date and time
 	return date_time + datetime.timedelta(hours = 1, minutes = -date_time.minute, seconds = -date_time.second)
 
-	
+
 def date_time_counter_split(dates_sorted): # split the date and count ('May 12': 1) into 2 strings and back into 1 string
 	sorted_dates = []
 	for i in dates_sorted:
 		date = datetime.datetime.strptime(i[0], "%m-%d %H")
-		date = datetime.datetime.strftime(date, "%b %d %H")	
+		date = datetime.datetime.strftime(date, "%b %d %H")
 		occurences = i[1]
 		sorted_dates.append(date + " " + str(occurences))
 	return sorted_dates
-		
-		
+
+
 def date_check(oom_date_count): #this function is used to produce a list of dates +inc hour of every oom occurence in the log file
         dates_test = []
 	dates_sorted = []
@@ -271,7 +271,7 @@ def date_check(oom_date_count): #this function is used to produce a list of date
         print ""
 	print ""
         if len(oom_date_count) > 4:
-		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurences" % (len(oom_date_count)) + bcolors.ENDC		
+		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurences" % (len(oom_date_count)) + bcolors.ENDC
 		print "Showing the " + bcolors.GREEN  + "1st" + bcolors.ENDC + ", " + bcolors.GREEN  + "2nd" + bcolors.ENDC + " and" + bcolors.GREEN + " last" + bcolors.ENDC
 
 
