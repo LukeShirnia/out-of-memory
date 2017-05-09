@@ -113,7 +113,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                 print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
                 print "-" * 40
 		print ""
-		find_all_logs(OOM_LOG) # print similar log files to check for an issue
+		quick_check_all_logs(find_all_logs(OOM_LOG)) # print similar log files to check for an issue
 		print ""
 
 
@@ -131,9 +131,23 @@ def find_all_logs(OOM_LOG): # function to find all other similar logs
 		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
 		while OOM_LOG in result:
 			result.remove(OOM_LOG)	
-		for i in result:
-			print i
+#		for i in result:
+#			print i
 	return result
+
+
+def quick_check_all_logs(results):
+	for a in results:
+		total_occurences = []
+		del total_occurences[:]
+		total_occurences = 0
+		normal_file = (False if a.endswith('.gz') else True)
+	        inLogFile = openfile(a, normal_file)
+		for line in inLogFile:
+			if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
+				total_occurences += 1
+		print "{0} - Occurences: {1}".format(a, total_occurences)
+
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
 	normal_file = (False if LOG_FILE.endswith('.gz') else True)
@@ -239,7 +253,7 @@ def date_check(oom_date_count): #this function is used to produce a list of date
 	dates_sorted = []
         oom_date_count.sort()
         for p in oom_date_count:
-		time = strip_time(p)
+		time = strip_time(p) # removing mm and ss from time (leaving only hour)
 		time = datetime.datetime.strftime(p, '%m-%d %H')
                 dates_test.append(time)
 #	dates_test = collections.Counter(dates_test) # uniq occurences ---- does not working with python 2.6.x

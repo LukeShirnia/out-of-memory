@@ -62,8 +62,7 @@ The following example shows the output of the script when run against a compress
      |     |     |     |
      |  |  |  |  | | | |
      |_____|_____|_|_|_|
- 
-Out Of Memory Analyser
+     Out Of Memory Analyser
 
 Disclaimer:
 If system OOMs too viciously, there may be nothing logged!
