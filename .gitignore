@@ -1,2 +1,4 @@
 message.long
 message.short
+.gitignore
+compare_test.py
