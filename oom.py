@@ -307,7 +307,7 @@ def OOM_record(LOG_FILE):
       column_number = find_rss_column(line.split())
     elif "kernel" not in line.lower() and record == True: # Skips log entries that may be interfering with oom output from kernel
       pass
-    elif "Out of memory: Kill process" in line.strip() or len(line.split()) < 14 and record == True:
+    elif "Out of memory: Kill process" in line.strip() and record == True or len(line.split()) < 14 and record == True:
       service_value_list[counter] = []
       list_of_values[counter] = filter(None, list_of_values[counter])
       unique = find_unique_services(list_of_values[counter])
