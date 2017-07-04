@@ -70,13 +70,19 @@ Do NOT take this script as FACT, investigate further
 ----------------------------------------
 
 Log Information
-Log File  :  /home/python/rackspace/messages-20170219.gz 
-Start date:  Feb, 12, 05:20:01 
-End Date  :  Feb, 19, 00:44:24 
+Log File  :  oom_logs/syslog.large 
+Start date:  Jun, 20, 06:46:37 
+End Date  :  Jun, 21, 08:32:24 
 
 ######## OOM ISSUE ########
 
-Number of OOM occurances in log file:  68 
+Number of OOM occurances in log file:  471 
+
+Service apache       Killed 278 time(s)
+Service generate_report Killed 190 time(s)
+Service php          Killed 1 time(s)
+Service mysqld       Killed 1 time(s)
+Service sh           Killed 1 time(s)
 
 KEY
 D = Dates
@@ -84,50 +90,57 @@ H = Hour
 O = Number of Occurences
 
 D      H  O
-Feb 12 10 68
+Jun 20 23 4
+Jun 21 00 56
+Jun 21 01 114
+Jun 21 02 105
+Jun 21 03 105
+Jun 21 04 87
 
 
-Note: Only Showing: 3 of the 68 occurences
+Note: Only Showing: 3 of the 471 occurences
 Showing the 1st, 2nd and last
 ----------------------------------------
-Mar, 9, 10:58:55
-Sytem RAM:            987 MB
-Estimated RAM at OOM: 1509 MB
-Services Killed:      mysqld, apache
+Jun 20 23:46:09 
+Sytem RAM:              987 MB
+Estimated RAM at OOM:   8575 MB
+Services Killed:        php 
 
 Top 5 RAM Consumers at time of OOM:
-Service: apache2               1370 MB
-Service: mysqld                251 MB
-Service: 4                     59 MB
-Service: driveclient           12 MB
-Service: fail2ban-server       10 MB
+Service: apache2               6382 MB 
+Service: php5                  1056 MB 
+Service: generate_report       881 MB 
+Service: gunicorn              101 MB 
+Service: mysqld                49 MB 
 
 ----------------------------------------
-Mar, 9, 10:59:57
-Sytem RAM:            987 MB
-Estimated RAM at OOM: 1555 MB
-Services Killed:      mysqld
+Jun 20 23:56:27 
+Sytem RAM:              987 MB
+Estimated RAM at OOM:   8569 MB
+Services Killed:        apache 
 
 Top 5 RAM Consumers at time of OOM:
-Service: apache2               1160 MB
-Service: mysqld                230 MB
-Service: driveclient           16 MB
-Service: sshd                  16 MB
-Service: rackspace-monit       15 MB
+Service: apache2               7235 MB 
+Service: generate_report       1074 MB 
+Service: gunicorn              101 MB 
+Service: mysqld                49 MB 
+Service: cron                  26 MB 
 
 ----------------------------------------
-Mar, 9, 11:37:32
-Sytem RAM:            987 MB
-Estimated RAM at OOM: 1369 MB
-Services Killed:      mysqld
+Jun 21 04:47:35 
+Sytem RAM:              987 MB
+Estimated RAM at OOM:   8491 MB
+Services Killed:        generate_report 
 
 Top 5 RAM Consumers at time of OOM:
-Service: apache2               1041 MB
-Service: mysqld                197 MB
-Service: sshd                  24 MB
-Service: driveclient           16 MB
-Service: rackspace-monit       15 MB
+Service: generate_report       4184 MB 
+Service: apache2               4068 MB 
+Service: gunicorn              84 MB 
+Service: cron                  58 MB 
+Service: sh                    18 MB 
+
 ----------------------------------------
+
 ```
 <br />
 
