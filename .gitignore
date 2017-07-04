@@ -1,5 +1,0 @@
-message.long
-message.short
-.gitignore
-compare_test.py
-dmesg.test.py
