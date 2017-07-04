@@ -295,7 +295,7 @@ def OOM_record(LOG_FILE):
 #  get_log_file_start_date(inLogFile)  # get the start and end date of log file
   for line in inLogFile:
     killed = re.search("Killed process (.*) total", line)
-    if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
+    if "[ pid ]   uid  tgid total_vm      rss" in line.strip() and "kernel" in line.lower():
       total_rss[counter] = []
       killed_services[counter] = []
       unique_services[counter] = []
@@ -305,7 +305,9 @@ def OOM_record(LOG_FILE):
       oom_date_count.append(date_time(line))
       line = strip_line(line)
       column_number = find_rss_column(line.split())
-    elif "Out of memory: Kill process" in line.strip() or len(line.split()) < 14 and record == True:
+    elif "kernel" not in line.lower() and record == True: # Skips log entries that may be interfering with oom output from kernel
+      pass
+    elif "Out of memory" in line.strip() and record == True or len(line.split()) < 14 and record == True:
       service_value_list[counter] = []
       list_of_values[counter] = filter(None, list_of_values[counter])
       unique = find_unique_services(list_of_values[counter])
