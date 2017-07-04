@@ -85,7 +85,7 @@ def strip_line(line):
    return line
 
 
-def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE):
+def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE, all_killed_services):
 	date_format = []
         for p in oom_date_count:
                 p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
@@ -94,7 +94,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 		show_full_dates = 4
 	else:
 		show_full_dates = counter
-        get_log_file_start_date(LOG_FILE, oom_date_count)
+        get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services)
         if counter > 1: # if oom invoked then print
 		date_check(oom_date_count)
                 for i in (1, 2, counter - 1):
@@ -108,9 +108,6 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                         for x in service_value_list[i]:
                                 print "Service: {0:20}  {1} MB ".format(x[0], x[1])
                         print ""
-#	elif counter == 1:
-#		OOM_record("/var/log/dmesg")
-#		counter = 0
         else:
                 print "-" * 40
                 print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
@@ -152,7 +149,7 @@ def quick_check_all_logs(results):
 		print "{0:26} - Occurences: {1}".format(a, total_occurences)
 
 
-def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start and end date of the current log file
+def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services): #function gets the start and end date of the current log file
 	normal_file = (False if LOG_FILE.endswith('.gz') else True)
 	inLogFile = openfile(LOG_FILE, normal_file)
 	first_line = inLogFile.readline().split()[0:3]
@@ -175,6 +172,10 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count): #function gets the start
 	else:
 		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
         print ""
+	all_killed_services = dict((i, all_killed_services.count(i)) for i in all_killed_services)
+	for i in all_killed_services:
+		print "Service " + bcolors.RED + "{0:12} ".format(i) + bcolors.ENDC +  "Killed " + bcolors.RED + "{1} ".format(i, all_killed_services[i]) + bcolors.ENDC + "time(s)"
+	print ""
 
 
 # this function processes each line and saves the rss value and process name .eg (51200, apache)
@@ -271,6 +272,7 @@ def date_check(oom_date_count): #this function is used to produce a list of date
         print bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " + bcolors.UNDERLINE + "H" + bcolors.ENDC +  "  "  + bcolors.UNDERLINE  + bcolors.UNDERLINE + "O" + bcolors.ENDC
 	for value in dates_test:
 		print value
+	
         print ""
 	print ""
         if len(oom_date_count) > 4:
@@ -287,6 +289,7 @@ def OOM_record(LOG_FILE):
   unique_services = {}
   service_value_list = {}
   total_service_list = []
+  all_killed_services = []
   normal_file = (False if LOG_FILE.endswith('.gz') else True)
   inLogFile = openfile(LOG_FILE, normal_file) #, open("/home/rack/oom", "w") as outfile:
   record = False
@@ -329,8 +332,9 @@ def OOM_record(LOG_FILE):
       killed = killed.split(",")[-1]
       killed = killed.strip("0123456789 ")
       killed_services[counter-1].append(killed)
+      all_killed_services.append(killed)
   inLogFile.close()
-  check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE)
+  check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE, all_killed_services)
 
 
 ###### Start script
