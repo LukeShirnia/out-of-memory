@@ -30,12 +30,10 @@ Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 def print_header():
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
-        #print ""
         print "      _____ _____ _____ "
         print "     |     |     |     |"
         print "     |  |  |  |  | | | |"
         print "     |_____|_____|_|_|_|"
-        #print ""
         print "     Out Of Memory Analyser"
         print ""
 	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC
@@ -131,8 +129,6 @@ def find_all_logs(OOM_LOG): # function to find all other similar logs
 		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
 		while OOM_LOG in result:
 			result.remove(OOM_LOG)
-#		for i in result:
-#			print i
 	return result
 
 
@@ -260,7 +256,6 @@ def date_check(oom_date_count): #this function is used to produce a list of date
 		time = strip_time(p) # removing mm and ss from time (leaving only hour)
 		time = datetime.datetime.strftime(p, '%m-%d %H')
                 dates_test.append(time)
-#	dates_test = collections.Counter(dates_test) # uniq occurences ---- does not working with python 2.6.x
 	dates_test = dict((i, dates_test.count(i)) for i in dates_test)
 	dates_sorted = sorted(dates_test.iteritems())
 	dates_test = date_time_counter_split(dates_sorted)
@@ -295,10 +290,11 @@ def OOM_record(LOG_FILE):
   record = False
   record_oom_true_false = False
   counter = 1
-#  get_log_file_start_date(inLogFile)  # get the start and end date of log file
+  oom_line_length = 0
   for line in inLogFile:
     killed = re.search("Killed process (.*) total", line)
     if "[ pid ]   uid  tgid total_vm      rss" in line.strip() and "kernel" in line.lower():
+      oom_line_length = len(line.strip())
       total_rss[counter] = []
       killed_services[counter] = []
       unique_services[counter] = []
@@ -308,9 +304,9 @@ def OOM_record(LOG_FILE):
       oom_date_count.append(date_time(line))
       line = strip_line(line)
       column_number = find_rss_column(line.split())
-    elif "kernel" not in line.lower() and record == True: # Skips log entries that may be interfering with oom output from kernel
+    elif "kernel" not in line.lower() and record == True or " hi:" in line.strip() and record == True: # Skips log entries that may be interfering with oom output from kernel
       pass
-    elif "Out of memory" in line.strip() and record == True or len(line.split()) < 14 and record == True:
+    elif "Out of memory" in line.strip() and record == True or len(line.split()) < 14  and record == True :
       service_value_list[counter] = []
       list_of_values[counter] = filter(None, list_of_values[counter])
       unique = find_unique_services(list_of_values[counter])
@@ -373,4 +369,3 @@ else:
         print "Too Many Arguments"
         print "Try again"
         print len(argv)
-
