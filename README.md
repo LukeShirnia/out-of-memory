@@ -55,7 +55,7 @@ The script currently works on the following OS:
 The ouput from this script can be broken down into 4 main sections:
 
 <br />
-#### Section 1 - Log File Information
+### Section 1 - Log File Information
 This section is a quick overview of the log file used for reference. 
 <br />
 Example:
