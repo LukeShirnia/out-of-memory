@@ -16,7 +16,7 @@ There are currently 3 usage methods.
 
 <br/>
 
-### Method 1 - preferred method
+### Method 1/2 - preferred method
 These 2 method are probably the "Safest" method. You can either gitclone or wget/curl the script locally and then run using python command.
 
 <br />
@@ -52,7 +52,7 @@ git clone https://github.com/LukeShirnia/out-of-memory-investigation.py.git; cd 
 
 <br />
 
-### Method 2
+### Method 3
 
 #### Part A
 Method 2 use curl to pipe into python, which as most system administrators will tell you is not always a safe method. This will use current system log file:
