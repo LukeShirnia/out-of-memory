@@ -115,7 +115,7 @@ End Date  :  Jun, 21, 08:32:24
 <br />
 
 ### Section 2 - Total Services Killed 
-During out-of-memory investigations its not always obvious what service(s) have been killed when most of the entries in the system log shows httpd/apache. This output allows you to quickly discover is a backup agent or mysql was killed at some point in the start/end date of the log file.
+During out-of-memory investigations its not always obvious what service(s) have been killed, especially when most of the entries in the system log shows httpd/apache. This output allows you to quickly discover if a backup agent or mysql was killed at some point in the start/end date of the log file.
 <br />
 Example:
 
