@@ -20,12 +20,12 @@ There are currently 3 usage methods.
 These 2 method are probably the "Safest" method. You can either gitclone or wget/curl the script locally and then run using python command.
 
 <br />
+
 #### Part A
 If no argument is parsed, it will default to using the system log.
 <br />
 Example:
 
-<br />
 ```
 wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py; python oom.py
 ```
@@ -41,8 +41,6 @@ If you wish to specify a specific an old rotated or gziped system log, run `pyth
 Note: This WILL work with compressed log files!
 <br />
 Example:
-
-<br />
 ```
 wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py; python oom.py /var/log/<old_rotated_file>
 ```
