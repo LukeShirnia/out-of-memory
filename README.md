@@ -76,7 +76,7 @@ End Date  :  Jun, 21, 08:32:24
 <br />
 
 ### Section 2 - Total Services Killed 
-Sometimes its not obvious when a service was killed if most of the entries in the system log shows httpd/apache. This ooutput allows you to quickly discover is a backup agent or mysql was killed at some point in the start/end date of the log file.
+During out-of-memory investigations its not always obvious what service(s) have been killed when most of the entries in the system log shows httpd/apache. This output allows you to quickly discover is a backup agent or mysql was killed at some point in the start/end date of the log file.
 <br />
 Example:
 
@@ -95,7 +95,6 @@ Service sh           Killed x time(s)
 ### Section 3 - Date of OOM Issues
 This helps narrow down problamatic times such as; peak traffic times, backup times etc
 <br />
-
 Example:
 
 ```
@@ -117,9 +116,7 @@ Jun 21 04 87
 
 ### Section 4 - Top 5 OOM Consumers
 This section allows you to narrow down the cause of heaviest memory consumer. This gives you a good starting point to prevent the issue occuring again. 
-
 <br />
-
 Example:
 
 ```
