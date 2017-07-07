@@ -11,16 +11,59 @@ The script looks in `/var/log/messages` or `/var/log/syslog` and takes the value
 
 <br />
 
-There are currently 2 usage methods. 
+There are currently 3 usage methods. 
 <br />
 
-### Method 1
-The first and most straight foward is simply running the command below...this will use the standard and current system log file:
+<br/>
 
+### Method 1 - preferred method
+These 2 method are probably the "Safest" method. You can either gitclone or wget/curl the script locally and then run using python command.
+
+<br />
+#### Part A
+<br />
+
+If no argument is parsed, it will default to using the system log.
+```
+wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py; python oom.py
+```
+or
+```
+git clone https://github.com/LukeShirnia/out-of-memory-investigation.py.git; cd out-of-memory-investigation.py; python oom.py
+```
+<br />
+
+#### Part B
+If you wish to specify a specific an old rotated or gziped system log, run `python oom.py /var/log/<oldlog>`
+<br />
+Note: This WILL work with compressed log files!
+<br />
+Example:
+
+<br />
+```
+wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py; python oom.py /var/log/<old_rotated_file>
+```
+or 
+```
+git clone https://github.com/LukeShirnia/out-of-memory-investigation.py.git; cd out-of-memory-investigation.py; python oom.py /var/log/<old_rotated_file>
+```
+<br />
+
+<br />
+
+### Method 2
+
+#### Part A
+<br />
+
+Method 2 use curl to pipe into python, which as most system administrators will tell you is not always a safe method. This will use current system log file:
+<br />
+Example
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python
 ```
-### Method 2
+#### Part B
 You can also specify a different log file if you are looking into historical data (such as compressed or logs have been rotated):
 
 Note: This WILL work with compressed log files!
@@ -37,11 +80,9 @@ curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigatio
 
 The script currently works on the following OS:
 
-*  RedHat 6,7
+*  RHEL/CentOS 6,7
 
-*  CentOS 6,7
-
-*  Ubuntu 14.04LTS
+*  Ubuntu 14.04LTS/16.04LTS
 
 *  Redhat/CentOS 5 - Only works on some devices,AND you need to specify python2.6 or 2.6 
 <br />
