@@ -52,8 +52,88 @@ The script currently works on the following OS:
 <br />
 
 
+The ouput from this script can be broken down into 4 main sections:
 
-### Example Output
+<br />
+#### Section 1 - Log File Information
+This section is a quick overview of the log file used for reference. 
+<br />
+Example:
+
+```
+Log Information
+Log File  :  /var/log/messages 
+Start date:  Jun, 20, 06:46:37 
+End Date  :  Jun, 21, 08:32:24 
+```
+
+<br />
+#### Section 2 - Total Services Killed 
+Sometimes its not obvious when a service was killed if most of the entries in the system log shows httpd/apache. This ooutput allows you to quickly discover is a backup agent or mysql was killed at some point in the start/end date of the log file.
+<br />
+Example:
+```
+Number of OOM occurances in log file:  x
+
+Service apache       Killed x time(s)
+Service perl	     Killed x time(s)
+Service php          Killed x time(s)
+Service mysqld       Killed x time(s)
+Service sh           Killed x time(s)
+```
+
+<br />
+#### Section 3 - Date of OOM Issues
+This helps narrow down problamatic times such as; peak traffic times, backup times etc
+<br />
+```
+Example:
+KEY
+D = Dates
+H = Hour
+O = Number of Occurences
+
+D      H  O
+Jun 20 23 4
+Jun 21 00 56
+Jun 21 01 114
+Jun 21 02 105
+Jun 21 03 105
+Jun 21 04 87
+```
+<br />
+#### Section 4 - Top 5 OOM Consumers
+This section allows you to narrow down the cause of heaviest memory consumer. This gives you a good starting point to prevent the issue occuring again. 
+<br />
+```
+Example:
+```
+ ----------------------------------------
+Jun 20 00:00:00 
+Sytem RAM:              x MB
+Estimated RAM at OOM:   x MB
+Services Killed:        php, apache 
+
+Top 5 RAM Consumers at time of OOM:
+Service: apache2               x MB 
+Service: php5                  x MB 
+Service: perl		       x MB 
+Service: gunicorn              x MB 
+Service: mysqld                x MB 
+
+----------------------------------------
+```
+
+
+<br />
+
+<br />
+
+
+
+
+
+### Full Example Output
 The following example shows the output of the script when run against a compressed log file in a "non standard" directory:
 
 ```
