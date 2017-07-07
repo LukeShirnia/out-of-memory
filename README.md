@@ -21,9 +21,11 @@ These 2 method are probably the "Safest" method. You can either gitclone or wget
 
 <br />
 #### Part A
-<br />
-
 If no argument is parsed, it will default to using the system log.
+<br />
+Example:
+
+<br />
 ```
 wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py; python oom.py
 ```
@@ -55,8 +57,6 @@ git clone https://github.com/LukeShirnia/out-of-memory-investigation.py.git; cd 
 ### Method 2
 
 #### Part A
-<br />
-
 Method 2 use curl to pipe into python, which as most system administrators will tell you is not always a safe method. This will use current system log file:
 <br />
 Example
