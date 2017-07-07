@@ -83,6 +83,20 @@ def strip_line(line):
    return line
 
 
+def print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list):
+	print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+        print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(date_format[i - 1]) + bcolors.ENDC
+        print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
+        print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
+        print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
+        print ""
+        print bcolors.UNDERLINE + "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC
+        for x in service_value_list[i]:
+ 	       print "Service: {0:20}  {1} MB ".format(x[0], x[1])
+        print ""
+
+
+
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE, all_killed_services):
 	date_format = []
         for p in oom_date_count:
@@ -93,19 +107,19 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 	else:
 		show_full_dates = counter
         get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services)
-        if counter > 1: # if oom invoked then print
+	counter = counter - 1
+        if counter == 1: # if only 1 instance of oom then print all
 		date_check(oom_date_count)
-                for i in (1, 2, counter - 1):
-                        print bcolors.BOLD + "-" * 40 + bcolors.ENDC
-                        print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(date_format[i - 1]) + bcolors.ENDC
-                        print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
-                        print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
-                        print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
-			print ""
-                        print bcolors.UNDERLINE + "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC
-                        for x in service_value_list[i]:
-                                print "Service: {0:20}  {1} MB ".format(x[0], x[1])
-                        print ""
+                #for i in (1):
+		i = 1
+		print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list,)
+	elif counter == 2: # if only 3 instance of oom then print all
+		date_check(oom_date_count)
+		for i in (1, 2):
+                        print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
+	elif counter >= 3: # if more 3 or more oom instances, print 1st, 2nd, last
+		for i in (1, 2, counter - 1):
+                        print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
         else:
                 print "-" * 40
                 print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
@@ -161,7 +175,7 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services): #fu
 	print ""
 	if len(oom_date_count) > 4:
 		neat_oom_invoke()
-        	print "Number of OOM occurances in log file: "  + bcolors.RED + " %s " % (len(oom_date_count)) + bcolors.ENDC
+        	print "Number of OOM occurances in log file: "  + bcolors.RED + " %s " % (len(oom_date_count) -1 ) + bcolors.ENDC
 	elif len(oom_date_count) <=4 and len(oom_date_count) > 0:
 		neat_oom_invoke()
 		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
@@ -354,7 +368,7 @@ elif len(argv) == 2:
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
 		try:
-	                OOM_record(OOM_LOG)
+       		        OOM_record(OOM_LOG)
 		except Exception as error:
 			print ""
 			print bcolors.RED + "Error:" + bcolors.ENDC
