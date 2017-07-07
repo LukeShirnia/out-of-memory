@@ -118,6 +118,7 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 		for i in (1, 2):
                         print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
 	elif counter >= 3: # if more 3 or more oom instances, print 1st, 2nd, last
+		date_check(oom_date_count)
 		for i in (1, 2, counter - 1):
                         print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
         else:
@@ -284,7 +285,7 @@ def date_check(oom_date_count): #this function is used to produce a list of date
 	
         print ""
 	print ""
-        if len(oom_date_count) > 4:
+        if len(oom_date_count) >= 3:
 		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurences" % (len(oom_date_count)) + bcolors.ENDC
 		print "Showing the " + bcolors.GREEN  + "1st" + bcolors.ENDC + ", " + bcolors.GREEN  + "2nd" + bcolors.ENDC + " and" + bcolors.GREEN + " last" + bcolors.ENDC
 
