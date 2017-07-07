@@ -33,6 +33,8 @@ curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigatio
 
 <br />
 
+## NOTE:
+
 The script currently works on the following OS:
 
 *  RedHat 6,7
@@ -41,7 +43,7 @@ The script currently works on the following OS:
 
 *  Ubuntu 14.04LTS
 
-***  Redhat/CentOS 5 - Only works on some devices,AND you need to specify python2.6 or 2.6  ***
+*  Redhat/CentOS 5 - Only works on some devices,AND you need to specify python2.6 or 2.6 
 <br />
 
 *** Testing on Ubuntu and Debian ongoing.  ***
@@ -51,10 +53,14 @@ The script currently works on the following OS:
 
 <br />
 
+<br />
+
+## Script Breakdown:
 
 The ouput from this script can be broken down into 4 main sections:
 
 <br />
+
 ### Section 1 - Log File Information
 This section is a quick overview of the log file used for reference. 
 <br />
@@ -138,8 +144,7 @@ Service: mysqld                x MB
 
 <br />
 
-
-
+<br />
 
 
 ### Full Example Output
@@ -235,7 +240,7 @@ Service: sh                    18 MB
 
 <br />
 
-### Example 
+### Example - No OOM in log file
 This example shows the output when NO oom has occured in the log file. NO options were passed with the running of this script (Method 1 was used) 
 
 ```
