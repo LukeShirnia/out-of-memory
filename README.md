@@ -36,7 +36,7 @@ git clone https://github.com/LukeShirnia/out-of-memory-investigation.py.git; cd 
 <br />
 
 #### Part B
-If you wish to specify a specific an old rotated or gziped system log, run `python oom.py /var/log/<oldlog>`
+If you wish to specify an old rotated or gziped system log, run `python oom.py /var/log/<oldlog>`, replacing `<oldlog>` with the file:
 <br />
 Note: This WILL work with compressed log files!
 <br />
