@@ -138,9 +138,9 @@ Example:
 
 ```
 KEY
-D = Dates
-H = Hour
-O = Number of Occurences
+D = Date(s) OOM
+H = Hour OOM Occured
+O = Number of Occurences in Date/Hour
 
 D      H  O
 Jun 20 23 4
@@ -206,7 +206,7 @@ End Date  :  Jun, 21, 08:32:24
 
 ######## OOM ISSUE ########
 
-Number of OOM occurances in log file:  471 
+Number of OOM occurences  in log file:  471 
 
 Service apache       Killed 278 time(s)
 Service generate_report Killed 190 time(s)
@@ -215,9 +215,9 @@ Service mysqld       Killed 1 time(s)
 Service sh           Killed 1 time(s)
 
 KEY
-D = Dates
-H = Hour
-O = Number of Occurences
+D = Date(s) OOM
+H = Hour OOM Occured
+O = Number of Occurences in Date/Hour
 
 D      H  O
 Jun 20 23 4

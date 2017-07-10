@@ -10,6 +10,7 @@ import datetime
 import operator
 import os
 import fnmatch
+import collections
 
 class bcolors:
     HEADER = '\033[95m'
@@ -157,7 +158,7 @@ def quick_check_all_logs(results):
 		for line in inLogFile:
 			if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
 				total_occurences += 1
-		print "{0:26} - Occurences: {1}".format(a, total_occurences)
+		print "{0:26} - Occurrences: {1}".format(a, total_occurences)
 
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services): #function gets the start and end date of the current log file
@@ -176,16 +177,17 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services): #fu
 	print ""
 	if len(oom_date_count) > 4:
 		neat_oom_invoke()
-        	print "Number of OOM occurances in log file: "  + bcolors.RED + " %s " % (len(oom_date_count) -1 ) + bcolors.ENDC
+        	print "Number of OOM occurrence in log file: "  + bcolors.RED + " %s " % (len(oom_date_count) -1 ) + bcolors.ENDC
 	elif len(oom_date_count) <=4 and len(oom_date_count) > 0:
 		neat_oom_invoke()
-		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
+		"Number of OOM occurrence in log file: %s " % (len(oom_date_count))
 	else:
-		"Number of OOM occurances in log file: %s " % (len(oom_date_count))
+		"Number of OOM occurrence in log file: %s " % (len(oom_date_count))
         print ""
-	all_killed_services = dict((i, all_killed_services.count(i)) for i in all_killed_services)
-	for i in all_killed_services:
-		print "Service " + bcolors.RED + "{0:12} ".format(i) + bcolors.ENDC +  "Killed " + bcolors.RED + "{1} ".format(i, all_killed_services[i]) + bcolors.ENDC + "time(s)"
+	all_killed_services = dict((i, all_killed_services.count(i)) for i in all_killed_services) # working dict count
+	ServiceCount = sorted( ((v,k) for k,v in all_killed_services.iteritems()), reverse=True)
+	for i in ServiceCount:
+		print "Service " + bcolors.RED + "{0:12} ".format(i[1]) + bcolors.ENDC +  "Killed " + bcolors.RED + "{0} ".format(i[0]) + bcolors.ENDC + "time(s)"
 	print ""
 
 
@@ -198,7 +200,7 @@ def save_values(line, column_number):
                 return string
 
 
-# this function takes the full list of saved processes and find each unique occurance of a process
+# this function takes the full list of saved processes and find each unique occurrence of a process
 def find_unique_services(list_of_values):
         new_list = []
         for i in list_of_values:
@@ -263,7 +265,7 @@ def date_time_counter_split(dates_sorted): # split the date and count ('May 12':
 	return sorted_dates
 
 	
-def date_check(oom_date_count): #this function is used to produce a list of dates +inc hour of every oom occurence in the log file
+def date_check(oom_date_count): #this function is used to produce a list of dates +inc hour of every oom occurrence in the log file
         dates_test = []
 	dates_sorted = []
         oom_date_count.sort()
@@ -275,9 +277,9 @@ def date_check(oom_date_count): #this function is used to produce a list of date
 	dates_sorted = sorted(dates_test.iteritems())
 	dates_test = date_time_counter_split(dates_sorted)
         print bcolors.YELLOW + bcolors.UNDERLINE + "KEY" + bcolors.ENDC + bcolors.YELLOW
-        print "D = Dates"
-        print "H = Hour"
-        print "O = Number of Occurences" + bcolors.ENDC
+        print "D = Date(s) OOM"
+        print "H = Hour OOM Occured"
+        print "O = Number of Occurences in Date/Hour" + bcolors.ENDC
         print ""
         print bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " + bcolors.UNDERLINE + "H" + bcolors.ENDC +  "  "  + bcolors.UNDERLINE  + bcolors.UNDERLINE + "O" + bcolors.ENDC
 	for value in dates_test:
@@ -286,7 +288,7 @@ def date_check(oom_date_count): #this function is used to produce a list of date
         print ""
 	print ""
         if len(oom_date_count) >= 3:
-		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurences" % (len(oom_date_count)) + bcolors.ENDC
+		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurrence" % (len(oom_date_count)) + bcolors.ENDC
 		print "Showing the " + bcolors.GREEN  + "1st" + bcolors.ENDC + ", " + bcolors.GREEN  + "2nd" + bcolors.ENDC + " and" + bcolors.GREEN + " last" + bcolors.ENDC
 
 
@@ -372,13 +374,13 @@ elif len(argv) == 2:
         script, OOM_LOG = argv
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
-		try:
-       		        OOM_record(OOM_LOG)
-		except Exception as error:
-			print ""
-			print bcolors.RED + "Error:" + bcolors.ENDC
-			print error
-			print ""
+	#	try:
+       	        OOM_record(OOM_LOG)
+	#	except Exception as error:
+	#		print ""
+	#		print bcolors.RED + "Error:" + bcolors.ENDC
+	#		print error
+	#		print ""
 		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
                 OOM_record(OOM_LOG)
