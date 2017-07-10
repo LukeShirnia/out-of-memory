@@ -323,7 +323,7 @@ def OOM_record(LOG_FILE):
       pass
     elif " hi:" in line.strip() and record == True:
       pass
-    elif "MAC=" in line.strip() and record = True: # Skips log entires in Ubuntu/Debian intefering with oom output
+    elif "MAC=" in line.strip() and record == True: # Skips log entires in Ubuntu/Debian intefering with oom output
       pass
     elif "Out of memory" in line.strip() and record == True or len(line.split()) < 14  and record == True :
       service_value_list[counter] = []
