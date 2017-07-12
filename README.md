@@ -27,11 +27,11 @@ If no argument is parsed, it will default to using the system log.
 Example:
 
 ```
-wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py; python oom.py
+wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py; python oom-investigate.py
 ```
 or
 ```
-git clone https://github.com/LukeShirnia/out-of-memory-investigation.py.git; cd out-of-memory-investigation.py; python oom.py
+git clone https://github.com/LukeShirnia/out-of-memory.git; cd out-of-memory; python oom-investigate.py
 ```
 <br />
 
@@ -42,11 +42,11 @@ Note: This WILL work with compressed log files!
 <br />
 Example:
 ```
-wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py; python oom.py /var/log/<old_rotated_file>
+wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py; python oom-investigate.py /var/log/<old_rotated_file>
 ```
 or 
 ```
-git clone https://github.com/LukeShirnia/out-of-memory-investigation.py.git; cd out-of-memory-investigation.py; python oom.py /var/log/<old_rotated_file>
+git clone https://github.com/LukeShirnia/out-of-memory.git; cd out-of-memory; python oom-investigate.py /var/log/<old_rotated_file>
 ```
 <br />
 
@@ -59,7 +59,7 @@ Method 2 use curl to pipe into python, which as most system administrators will 
 <br />
 Example
 ```
-curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python
+curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py | python
 ```
 #### Part B
 You can also specify a different log file if you are looking into historical data (such as compressed or logs have been rotated):
@@ -68,7 +68,7 @@ Note: This WILL work with compressed log files!
 
 Replace `/var/log/messages.1` with the log file you wish to analyse. 
 ```
-curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory-investigation.py/master/oom.py | python - /var/log/messages.1
+curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py | python - /var/log/messages.1
 ```
 <br />
 
