@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Author:       Luke Shirnia
-# Source:       https://github.com/LukeShirnia/out-of-memory-investigation.py
+# Source:       https://github.com/LukeShirnia/out-of-memory/
 
 from sys import argv
 import platform
