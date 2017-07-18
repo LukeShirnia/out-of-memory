@@ -354,7 +354,18 @@ def OOM_record(LOG_FILE):
   check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE, all_killed_services)
 
 
-###### Start script
+def file_size(file_path): # Make sure the file is not too large. A file which is too large combined with a small device can cause oom
+    """
+    this function will return the file size
+    """
+    if os.path.isfile(file_path):
+        file_info = os.stat(file_path)
+        return int((file_info.st_size) / 1024 ) / 1024
+
+
+
+
+
 print_header()
 os_check_value = os_check()
 
@@ -362,28 +373,48 @@ if len(argv) == 1:
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
 		OOM_LOG = "/var/log/messages"
-                OOM_record(OOM_LOG)
-		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+		if file_size(OOM_LOG) < 250:
+	                OOM_record(OOM_LOG)
+			print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+		else:
+			print 
+			print "!!! File is too LARGE !!!"
+			print "Please consider splitting the file into smaller chunks (such as dates)"
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
 		OOM_LOG = "/var/log/syslog"
-                OOM_record(OOM_LOG)
-		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+		if file_size(OOM_LOG) < 250:
+	                OOM_record(OOM_LOG)
+			print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+		else:
+			print
+                        print "!!! File is too LARGE !!!"
+                        print "Please consider splitting the file into smaller chunks (such as dates)"
         else:
                 print "Unsupported OS"
 elif len(argv) == 2:
         script, OOM_LOG = argv
         if os_check_value.lower() in CentOS_RedHat_Distro:
                 system_rss = system_resources()
-		try:
-       	       		OOM_record(OOM_LOG)
-		except Exception as error:
-			print ""
-			print bcolors.RED + "Error:" + bcolors.ENDC
-			print error
-			print ""
-		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+		if file_size(OOM_LOG) < 250: # check file size is below 250 MB
+			try:
+       		       		OOM_record(OOM_LOG)
+			except Exception as error:
+				print ""
+				print bcolors.RED + "Error:" + bcolors.ENDC
+				print error
+				print ""
+			print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+		else:
+			print
+			print "!!! File is too LARGE !!!"
+                        print "Please consider splitting the file into smaller chunks (such as dates)"
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
-                OOM_record(OOM_LOG)
+		if file_size(OOM_LOG) < 250:
+	                OOM_record(OOM_LOG)
+		else:
+			print
+                        print "!!! File is too LARGE !!!"
+                        print "Please consider splitting the file into smaller chunks (such as dates)"
         else:
                 print "Unsupported OS"
 else:
