@@ -3,12 +3,15 @@
 
 The following python script can be used to calculate the estimated RSS (RAM) value of each service at the time a kernel invoked OOM killer.
 
-At the time of an OOM incident, the system logs the estimated RSS value of each service in its system log. Based off of this information the script will calculate how much RAM the services were "theorietically" trying to use, the total RAM value of all services and how much RAM your system actually has to offer these services. Allowing for further investigation into the memory usage of the top "offending" service(s).
+At the time of an OOM incident, the system logs the estimated RSS value of each service in its system log. Based off of this information the script will calculate how much RAM the services were "theoretically" trying to use, the total RAM value of all services and how much RAM your system actually has to offer these services. Allowing for further investigation into the memory usage of the top "offending" service(s).
 
 
 The script looks in `/var/log/messages` or `/var/log/syslog` and takes the values recorded by the system just before the incident occurs. 
 
 
+hello
+
+random
 
 <br />
 
@@ -71,7 +74,7 @@ The script currently works on the following OS:
 
 ## Script Breakdown:
 
-The ouput from this script can be broken down into 4 main sections:
+The output from this script can be broken down into 4 main sections:
 
 <br />
 
@@ -95,7 +98,7 @@ During out-of-memory investigations its not always obvious what service(s) have 
 Example:
 
 ```
-Number of OOM occurances in log file:  x
+Number of OOM occurrences in log file:  x
 
 Service apache       Killed x time(s)
 Service perl	     Killed x time(s)
@@ -107,15 +110,15 @@ Service sh           Killed x time(s)
 <br />
 
 ### Section 3 - Date of OOM Issues
-This helps narrow down problamatic times such as; peak traffic times, backup times etc
+This helps narrow down problematic times such as; peak traffic times, backup times etc
 <br />
 Example:
 
 ```
 KEY
 D = Date(s) OOM
-H = Hour OOM Occured
-O = Number of Occurences in Date/Hour
+H = Hour OOM Occurred
+O = Number of Occurrences in Date/Hour
 
 D      H  O
 Jun 20 23 4
@@ -136,7 +139,7 @@ Example:
 ```
  ----------------------------------------
 Jun 20 00:00:00 
-Sytem RAM:              x MB
+System RAM:              x MB
 Estimated RAM at OOM:   x MB
 Services Killed:        php, apache 
 
@@ -191,8 +194,8 @@ Service sh           Killed 1 time(s)
 
 KEY
 D = Date(s) OOM
-H = Hour OOM Occured
-O = Number of Occurences in Date/Hour
+H = Hour OOM Occurred
+O = Number of Occurrences in Date/Hour
 
 D      H  O
 Jun 20 23 4
@@ -203,7 +206,7 @@ Jun 21 03 105
 Jun 21 04 87
 
 
-Note: Only Showing: 3 of the 471 occurences
+Note: Only Showing: 3 of the 471 occurrences
 Showing the 1st, 2nd and last
 ----------------------------------------
 Jun 20 23:46:09 
@@ -252,7 +255,7 @@ Service: sh                    18 MB
 <br />
 
 ### Example - No OOM in log file
-This example shows the output when NO oom has occured in the log file. NO options were passed with the running of this script (Method 1 was used) 
+This example shows the output when NO oom has occurred in the log file. NO options were passed with the running of this script (Method 1 was used) 
 
 ```
 ----------------------------------------
@@ -278,10 +281,10 @@ OOM has NOT occured in specified log file!
 ----------------------------------------
 
 Other Logs worth checking:
-/var/log/messages-20170416 - Occurences: 1
-/var/log/messages-20170424 - Occurences: 0
-/var/log/messages-20170430 - Occurences: 5
-/var/log/messages-20170507 - Occurences: 0
+/var/log/messages-20170416 - Occurrences: 1
+/var/log/messages-20170424 - Occurrences: 0
+/var/log/messages-20170430 - Occurrences: 5
+/var/log/messages-20170507 - Occurrences: 0
 
 ----------------------------------------
 ```
