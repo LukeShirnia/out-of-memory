@@ -32,6 +32,7 @@ python oom-investigate.py <old_rotated_file>
 ### Method(s)
 
 <br />
+
 ```
 wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py
 ```
