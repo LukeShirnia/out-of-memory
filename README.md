@@ -11,7 +11,8 @@ The script looks in `/var/log/messages` or `/var/log/syslog` and takes the value
 
 
 <br />
-## Running
+
+##  Running
 
 There are currently 2 methods for running.
 
@@ -34,11 +35,15 @@ python oom-investigate.py <old_rotated_file>
 ```
 wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py
 ```
+
 or
+
 ```
 git clone https://github.com/LukeShirnia/out-of-memory.git
 ```
+
 or 
+
 ```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py | python
 ```
