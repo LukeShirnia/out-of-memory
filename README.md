@@ -1,75 +1,48 @@
 # Out-Of-Memory Investigation .py
 
 
-The following python script can be used to calculate the estimated RSS (RAM) value of each service at the time a kernel invoked OOM killer. At the time of an OOM incident, the system logs the estimated RSS value of each service in its system log, this script will calculate how much RAM the services were "theorietically" trying to use, the total RAM value of all services and how much RAM your system actually has to offer these services. 
+The following python script can be used to calculate the estimated RSS (RAM) value of each service at the time a kernel invoked OOM killer.
+
+At the time of an OOM incident, the system logs the estimated RSS value of each service in its system log. Based off of this information the script will calculate how much RAM the services were "theorietically" trying to use, the total RAM value of all services and how much RAM your system actually has to offer these services. Allowing for further investigation into the memory usage of the top "offending" service(s).
 
 
 The script looks in `/var/log/messages` or `/var/log/syslog` and takes the values recorded by the system just before the incident occurs. 
 
 
 
-
 <br />
+## Running
 
-There are currently 3 usage methods. 
+There are currently 2 methods for running.
+
+If no argument is parsed, it will default to using the current ACTIVE system log:
+
+```
+python oom-investigate.py
+```
+You can also specify an old/rotated/compresses log:
+```
+python oom-investigate.py <old_rotated_file>
+```
 <br />
 
 <br/>
 
-### Method 1/2 - preferred method
-These 2 method are probably the "Safest" method. You can either gitclone or wget/curl the script locally and then run using python command.
+### Method(s)
 
 <br />
-
-#### Part A
-If no argument is parsed, it will default to using the system log.
-<br />
-Example:
-
 ```
-wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py; python oom-investigate.py
+wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py
 ```
 or
 ```
-git clone https://github.com/LukeShirnia/out-of-memory.git; cd out-of-memory; python oom-investigate.py
-```
-<br />
-
-#### Part B
-If you wish to specify an old rotated or gziped system log, run `python oom.py /var/log/<oldlog>`, replacing `<oldlog>` with the file:
-<br />
-Note: This WILL work with compressed log files!
-<br />
-Example:
-```
-wget https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py; python oom-investigate.py /var/log/<old_rotated_file>
+git clone https://github.com/LukeShirnia/out-of-memory.git
 ```
 or 
 ```
-git clone https://github.com/LukeShirnia/out-of-memory.git; cd out-of-memory; python oom-investigate.py /var/log/<old_rotated_file>
-```
-<br />
-
-<br />
-
-### Method 3
-
-#### Part A
-Method 2 use curl to pipe into python, which as most system administrators will tell you is not always a safe method. This will use current system log file:
-<br />
-Example
-```
 curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py | python
 ```
-#### Part B
-You can also specify a different log file if you are looking into historical data (such as compressed or logs have been rotated):
 
-Note: This WILL work with compressed log files!
-
-Replace `/var/log/messages.1` with the log file you wish to analyse. 
-```
-curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-investigate.py | python - /var/log/messages.1
-```
 <br />
 
 <br />
@@ -82,11 +55,7 @@ The script currently works on the following OS:
 
 *  Ubuntu 14.04LTS/16.04LTS
 
-*  Redhat/CentOS 5 - Only works on some devices,AND you need to specify python2.6 or 2.6 
-<br />
-
-*** Testing on Ubuntu and Debian ongoing.  ***
-
+*  Redhat/CentOS 5 - Only works on some devices,AND you may need to specify python2.6 or 2.6 
 
 <br />
 
