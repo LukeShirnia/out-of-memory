@@ -9,10 +9,6 @@ At the time of an OOM incident, the system logs the estimated RSS value of each 
 The script looks in `/var/log/messages` or `/var/log/syslog` and takes the values recorded by the system just before the incident occurs. 
 
 
-hello
-
-random
-
 <br />
 
 ##  Running
