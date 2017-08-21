@@ -13,6 +13,9 @@ import fnmatch
 import collections
 
 class bcolors:
+    '''
+	Class used for colour formatting
+    '''
     HEADER = '\033[95m'
     RED = '\033[91m'
     ENDC = '\033[0m'
@@ -30,6 +33,9 @@ Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 
 def print_header():
+	'''
+	Disclaimer and Script Header
+	'''
         print bcolors.CYAN + "-" * 40 + bcolors.ENDC
         print "      _____ _____ _____ "
         print "     |     |     |     |"
@@ -44,11 +50,17 @@ def print_header():
 
 
 def neat_oom_invoke():
+	'''
+	Print WARNING if there is an OOM issue
+	'''
         print bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" + bcolors.ENDC
         print ""
 
 
 def os_check():
+	'''
+	Make sure this is being run on a Linux device first	
+	'''
         os_platform = platform.system()
         if os_platform == "Linux":
                 distro = platform.linux_distribution()[0]
@@ -59,32 +71,47 @@ def os_check():
 
 
 def system_resources():
-   with open("/proc/meminfo", "r") as meminfo:
-      for lines in meminfo:
-         if "MemTotal" in lines.strip():
-            memory_value = int(lines.split()[1])
-            system_memory = memory_value / 1024
-            return system_memory
+	'''
+	Get the RAM info from /proc
+	'''
+	with open("/proc/meminfo", "r") as meminfo:
+		for lines in meminfo:
+			if "MemTotal" in lines.strip():
+				memory_value = int(lines.split()[1])
+				system_memory = memory_value / 1024
+				return system_memory
 
 
 def strip_rss(line, column_number):
-   line = line.split()
-   value = int(line[column_number-1])
-   return value
+	'''
+	Obtain the RSS value of a service from the line
+	'''
+	line = line.split()
+	value = int(line[column_number-1])
+	return value
 
 
 def add_rss(total_rss):
-   return sum((total_rss) * 4 ) / 1024
+	'''
+	Covert RSS value to RAM ( * 4)
+	'''
+	return sum((total_rss) * 4 ) / 1024
 
 
 def strip_line(line):
-   for ch in ["[","]","}","{","'", "(",")"]:
-      if ch in line:
-        line = line.replace(ch,"")
-   return line
+	'''
+	Stripping all non required characters from the line so not to interfere with line.split()
+	'''
+	for ch in ["[","]","}","{","'", "(",")"]:
+		if ch in line:
+			line = line.replace(ch,"")
+	return line
 
 
 def print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list):
+	'''
+	Print the Output of an OOM incident (Inc TOP 5 RAM consumers)
+	'''
 	print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(date_format[i - 1]) + bcolors.ENDC
         print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
@@ -99,6 +126,9 @@ def print_oom_output(i, date_format, system_resources, total_rss_per_incident, k
 
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE, all_killed_services):
+	'''
+	Check if OOM incident occurred. ADD FUNCTION TO PROMPT FOR OTHER LOG FILES
+	'''
 	date_format = []
         for p in oom_date_count:
                 p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
@@ -131,7 +161,10 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 		print ""
 
 
-def find_all_logs(OOM_LOG): # function to find all other similar logs
+def find_all_logs(OOM_LOG):
+	'''
+	This function finds all log files in the directory of default log file (or specified log file)
+	'''
 	result = []
 	split_log_file_dir = os.path.dirname(OOM_LOG)
 	split_log_file_name = os.path.basename(OOM_LOG)
@@ -149,6 +182,9 @@ def find_all_logs(OOM_LOG): # function to find all other similar logs
 
 
 def quick_check_all_logs(results):
+	'''
+	Quickly check all log files for oom incidents
+	'''
 	for a in results:
 		total_occurences = []
 		del total_occurences[:]
@@ -161,7 +197,10 @@ def quick_check_all_logs(results):
 		print "{0:26} - Occurrences: {1}".format(a, total_occurences)
 
 
-def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services): #function gets the start and end date of the current log file
+def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
+	'''
+	Get the start and end date of the current log file
+	'''
 	normal_file = (False if LOG_FILE.endswith('.gz') else True)
 	inLogFile = openfile(LOG_FILE, normal_file)
 	first_line = inLogFile.readline().split()[0:3]
@@ -191,8 +230,10 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services): #fu
 	print ""
 
 
-# this function processes each line and saves the rss value and process name .eg (51200, apache)
 def save_values(line, column_number):
+	'''
+	This function processes each line (when record = True) and saves the rss value and process name .eg (51200, apache)
+	'''
         value = line.split()[-1:]
         if len(value) == 1:
                 cols = line.split()
@@ -200,8 +241,10 @@ def save_values(line, column_number):
                 return string
 
 
-# this function takes the full list of saved processes and find each unique occurrence of a process
 def find_unique_services(list_of_values):
+	'''
+	Finding the unique list of killed services (excludes the duplicated, eg apache, apache, apache is just apache)
+	'''
         new_list = []
         for i in list_of_values:
                 new_list_value = i[1]
