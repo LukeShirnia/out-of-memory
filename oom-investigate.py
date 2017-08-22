@@ -219,7 +219,8 @@ def select_next_logfile(log_file):
 			Not_Integer = True
 			while Not_Integer:
 				print "Which file should we check next?"
-				option_answer = raw_input("Select an option number between 1 and " + str(len(log_file)) + ": " )
+				# option_answer = raw_input("Select an option number between 1 and " + str(len(log_file)) + ": " )
+				option_answer = raw_input("Select an option number between" + bcolors.GREEN + " 1 " + bcolors.ENDC + "and " + bcolors.GREEN + str(len(log_file)) +  bcolors.ENDC +  ": " )
 				if option_answer.isdigit(): 
 					option_answer = int(option_answer)	
 					option_answer -= 1
@@ -229,7 +230,7 @@ def select_next_logfile(log_file):
 						incorrect = False
 						Not_Integer = False
 					else:
-						print "Option number out of range, try again:"
+						print "Option number out of range, try again"
 						print
 				else:
 					print "Please select an number"
