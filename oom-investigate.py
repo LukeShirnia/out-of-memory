@@ -175,7 +175,7 @@ def find_all_logs(OOM_LOG):
 			result.append(os.path.join(root, name))
 	result.sort()
 	if len(result) > 1:
-		print bcolors.YELLOW + "Other Logs worth checking:" + bcolors.ENDC
+		print bcolors.YELLOW + "Checking other logs, select an option:" + bcolors.ENDC
 		while OOM_LOG in result:
 			result.remove(OOM_LOG)
 	return result
@@ -185,6 +185,9 @@ def quick_check_all_logs(results):
 	'''
 	Quickly check all log files for oom incidents
 	'''
+	option = 1
+	next_logs_to_search = []
+	del next_logs_to_search[:]
 	for a in results:
 		total_occurences = []
 		del total_occurences[:]
@@ -194,7 +197,39 @@ def quick_check_all_logs(results):
 		for line in inLogFile:
 			if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
 				total_occurences += 1
-		print "{0:26} - Occurrences: {1}".format(a, total_occurences)
+		if total_occurences >= 1:
+			print "Option: {0}  {1:26} - Occurrences: {2}".format(option, a, total_occurences)
+			next_logs_to_search.append(a)
+			option +=1
+		else:
+			print "           {0:26} - Occurrences: {1}".format(a, total_occurences)
+	select_next_logfile(next_logs_to_search)
+
+
+def select_next_logfile(log_file):
+	'''
+	This function is for the user to select the next log file they wish to inspect `if OOM count >= 1` in another log file (inspected in the previous function)
+	'''
+	if len(log_file) >= 1:
+		print 
+		incorrect = True
+		while incorrect:
+			Not_Integer = True
+			while Not_Integer:
+				print "Which file should we check next?"
+				option_answer = raw_input("Select an option number between 1 and " + str(len(log_file)) + ": " )
+				if option_answer.isdigit(): 
+					option_answer = int(option_answer)	
+					option_answer -= 1
+					if ( option_answer ) <= len(log_file) and ( option_answer ) >= 0: 
+						OOM_record(log_file[option_answer - 1])
+						incorrect = False
+						Not_Integer = False
+					else:
+						print "Option number out of range, try again:"
+						print
+				else:
+					print "Please select an number"
 
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
@@ -253,8 +288,10 @@ def find_unique_services(list_of_values):
         return new_list
 
 
-# add up the rss value of the unique service list
 def add_rss_for_processes(unique, list_of_values):
+	'''
+	Adding the RSS value of each service
+	'''
         values_to_add = []
         total_service_usage = []
         del total_service_usage[:]
@@ -270,8 +307,10 @@ def add_rss_for_processes(unique, list_of_values):
         return total_service_usage
 
 
-# used to find out if a compressed file is being used or not
 def openfile(filename, normal_file):
+	'''
+	Check if input file is a compressed or regular file
+	'''
 	if normal_file:
 		return open(filename, "r")
 	elif filename.endswith('.gz'):
@@ -280,25 +319,38 @@ def openfile(filename, normal_file):
 		return open(filename, "r")
 
 
-def find_rss_column(line): #function to find the column number of rss header (for OS compatibility)
+def find_rss_column(line): 
+	'''
+	This check finds the correct column for RSS
+	Each distribution and version may log differently, this allows to catch all, for Linux OS compatibility
+	'''
 	for i, word in enumerate(line):
 		if word == "rss":
 			column = int(i+1)
 			return column
 
 
-def date_time(line):                   # return a date object
+def date_time(line):
+	'''
+	Creates a date object from an extracted string retreived from the log line
+	'''
 	date_of_oom = line.split()[0:3]
 	date_of_oom = " ".join(date_of_oom)
 	date_check = datetime.datetime.strptime(date_of_oom, "%b %d %H:%M:%S")
 	return date_check
 
 
-def strip_time(date_time): # remove mins and seconds from date and time
+def strip_time(date_time):
+	'''
+	Used to summarise the hour OOM's occurred (excludes the mins and seconds)
+	'''
 	return date_time + datetime.timedelta(hours = 1, minutes = -date_time.minute, seconds = -date_time.second)
 
 	
-def date_time_counter_split(dates_sorted): # split the date and count ('May 12': 1) into 2 strings and back into 1 string
+def date_time_counter_split(dates_sorted):
+	'''
+	Split the date and OOM count ('May 12': 1) into 2 strings and back into 1 string
+	'''
 	sorted_dates = []
 	for i in dates_sorted:
 		date = datetime.datetime.strptime(i[0], "%m-%d %H")
@@ -308,7 +360,10 @@ def date_time_counter_split(dates_sorted): # split the date and count ('May 12':
 	return sorted_dates
 
 	
-def date_check(oom_date_count): #this function is used to produce a list of dates +inc hour of every oom occurrence in the log file
+def date_check(oom_date_count):
+	'''
+	The function is used to produce a list of dates +inc hour of every oom occurrence in the log file
+	'''
         dates_test = []
 	dates_sorted = []
         oom_date_count.sort()
@@ -336,6 +391,10 @@ def date_check(oom_date_count): #this function is used to produce a list of date
 
 
 def OOM_record(LOG_FILE):
+  '''
+	Takes 1 argument - the log file to check
+	Checks line-by-line for specific string match that indicated OOM has taken place
+  '''
   oom_date_count = []
   running_service = []
   list_of_values = {}
@@ -397,16 +456,14 @@ def OOM_record(LOG_FILE):
   check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE, all_killed_services)
 
 
-def file_size(file_path): # Make sure the file is not too large. A file which is too large combined with a small device can cause oom
+def file_size(file_path):
     """
-    this function will return the file size
+    This function will return the file size of the script.
+    Currently HUGE OOM log file will cause memory issues, this is to prevent that
     """
     if os.path.isfile(file_path):
         file_info = os.stat(file_path)
         return int((file_info.st_size) / 1024 ) / 1024
-
-
-
 
 
 print_header()
