@@ -251,7 +251,9 @@ Service: sh                    18 MB
 <br />
 
 ### Example - No OOM in log file
-This example shows the output when NO oom has occurred in the log file. NO options were passed with the running of this script (Method 1 was used) 
+This example shows the output when NO oom has occurred in the log file. NO options were passed with the running of this script (Method 1 was used).
+
+The script will now prompt you to enter an option if the main file doesn't contain any oom incidents but another file does:
 
 ```
 ----------------------------------------
@@ -276,11 +278,14 @@ End Date  :  May, 8, 14:30:01
 OOM has NOT occured in specified log file!
 ----------------------------------------
 
-Other Logs worth checking:
-/var/log/messages-20170416 - Occurrences: 1
-/var/log/messages-20170424 - Occurrences: 0
-/var/log/messages-20170430 - Occurrences: 5
-/var/log/messages-20170507 - Occurrences: 0
+Checking other logs, select an option:
+Option: 1  /var/log/messages-20170219.gz - Occurrences: 68
+           /var/log/messages-20170731 - Occurrences: 0
+           /var/log/messages-20170806 - Occurrences: 0
+           /var/log/messages-20170814 - Occurrences: 0
+           /var/log/messages-20170820 - Occurrences: 0
+Option: 2  /var/log/messages.1        - Occurrences: 1
 
-----------------------------------------
+Which file should we check next?
+Select an option number between 1 and 2:
 ```
