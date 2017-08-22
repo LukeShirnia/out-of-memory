@@ -200,7 +200,7 @@ def quick_check_all_logs(results):
 			if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
 				total_occurences += 1
 		if total_occurences >= 1:
-			print "Option: {0}  {1:26} - Occurrences: {2}".format(option, a, total_occurences)
+			print bcolors.GREEN + "Option: {0}".format(option) + bcolors.ENDC + "  {0:26} - Occurrences: {1}".format(a, total_occurences)
 			next_logs_to_search.append(a)
 			option +=1
 		else:
@@ -379,8 +379,8 @@ def date_check(oom_date_count):
 	dates_test = date_time_counter_split(dates_sorted)
         print bcolors.YELLOW + bcolors.UNDERLINE + "KEY" + bcolors.ENDC + bcolors.YELLOW
         print "D = Date(s) OOM"
-        print "H = Hour OOM Occured"
-        print "O = Number of Occurences in Date/Hour" + bcolors.ENDC
+        print "H = Hour OOM Occurred"
+        print "O = Number of Occurrences in Date/Hour" + bcolors.ENDC
         print ""
         print bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " + bcolors.UNDERLINE + "H" + bcolors.ENDC +  "  "  + bcolors.UNDERLINE  + bcolors.UNDERLINE + "O" + bcolors.ENDC
 	for value in dates_test:
