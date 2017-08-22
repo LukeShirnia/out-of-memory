@@ -223,8 +223,9 @@ def select_next_logfile(log_file):
 				if option_answer.isdigit(): 
 					option_answer = int(option_answer)	
 					option_answer -= 1
-					if ( option_answer ) <= len(log_file) and ( option_answer ) >= 0: 
-						OOM_record(log_file[option_answer - 1])
+					if ( option_answer ) <= ( len(log_file) - 1 ) and ( option_answer ) >= 0: 
+						new_log_file = log_file[option_answer]
+						OOM_record(new_log_file)
 						incorrect = False
 						Not_Integer = False
 					else:
