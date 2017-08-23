@@ -13,7 +13,21 @@ The script looks in `/var/log/messages` or `/var/log/syslog` and takes the value
 
 ##  Running
 
-There are currently 2 methods for running.
+Usage:
+
+```
+
+Usage: oom-investigate.py [option]
+
+Options:
+  -h, --help            show this help message and exit
+  -q, --quick           Quick Search all rotated system files
+  -f File, --file=File  Specify a log to check
+
+
+```
+
+There are currently 3 methods for running.
 
 If no argument is parsed, it will default to using the current ACTIVE system log:
 
@@ -22,7 +36,11 @@ python oom-investigate.py
 ```
 You can also specify an old/rotated/compresses log:
 ```
-python oom-investigate.py <old_rotated_file>
+python oom-investigate.py -f <old_rotated_file>
+```
+Or you can summarise the log files quickly with:
+```
+python oom-investigate.py -q
 ```
 <br />
 
@@ -50,8 +68,6 @@ curl -s https://raw.githubusercontent.com/LukeShirnia/out-of-memory/master/oom-i
 
 <br />
 
-<br />
-
 ## NOTE:
 
 The script currently works on the following OS:
@@ -61,8 +77,6 @@ The script currently works on the following OS:
 *  Ubuntu 14.04LTS/16.04LTS
 
 *  Redhat/CentOS 5 - Only works on some devices,AND you may need to specify python2.6 or 2.6 
-
-<br />
 
 <br />
 

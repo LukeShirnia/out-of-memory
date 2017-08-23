@@ -12,6 +12,8 @@ import operator
 import os
 import fnmatch
 import collections
+from optparse import OptionParser
+
 
 class bcolors:
     '''
@@ -115,7 +117,7 @@ def print_oom_output(i, date_format, system_resources, total_rss_per_incident, k
 	'''
 	print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(date_format[i - 1]) + bcolors.ENDC
-        print bcolors.YELLOW + "Sytem RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
+        print bcolors.YELLOW + "System RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
         print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
         print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
         print ""
@@ -470,18 +472,18 @@ def file_size(file_path):
         return int((file_info.st_size) / 1024 ) / 1024
 
 
-def begin_script():
+def get_log_file():
 	'''
 	Checks OS distribution and accepts arguments
 	'''
 	print_header()
 	os_check_value = os_check()
-	if len(argv) == 1:
+	if len(argv) == 1 or len(argv) == 2:
         	if os_check_value.lower() in CentOS_RedHat_Distro:
                 	system_rss = system_resources()
 			OOM_LOG = "/var/log/messages"
 			if file_size(OOM_LOG) < 250:
-		                OOM_record(OOM_LOG)
+				return OOM_LOG
 				print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 			else:
 				print 
@@ -490,7 +492,7 @@ def begin_script():
 	        elif os_check_value.lower() in Ubuntu_Debian_Distro:
 			OOM_LOG = "/var/log/syslog"
 			if file_size(OOM_LOG) < 250:
-		                OOM_record(OOM_LOG)
+				return OOM_LOG
 				print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 			else:
 				print
@@ -498,26 +500,19 @@ def begin_script():
 	                        print "Please consider splitting the file into smaller chunks (such as dates)"
 	        else:
 	                print "Unsupported OS"
-	elif len(argv) == 2:
-	        script, OOM_LOG = argv
+	elif len(argv) == 3:
+		script, option ,OOM_LOG = argv
 	        if os_check_value.lower() in CentOS_RedHat_Distro:
 	                system_rss = system_resources()
 			if file_size(OOM_LOG) < 250: # check file size is below 250 MB
-				try:
-	       		       		OOM_record(OOM_LOG)
-				except Exception as error:
-					print ""
-					print bcolors.RED + "Error:" + bcolors.ENDC
-					print error
-					print ""
-				print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+				return OOM_LOG
 			else:
 				print
 				print "!!! File is too LARGE !!!"
 	                        print "Please consider splitting the file into smaller chunks (such as dates)"
 	        elif os_check_value.lower() in Ubuntu_Debian_Distro:
 			if file_size(OOM_LOG) < 250:
-		                OOM_record(OOM_LOG)
+				return OOM_LOG
 			else:
 				print
 	                        print "!!! File is too LARGE !!!"
@@ -528,8 +523,65 @@ def begin_script():
 	        print "Too Many Arguments - ", ( len(argv) -1 )
 		print "Try again"
 
-try:
-	begin_script()
-except(EOFError, KeyboardInterrupt):
-	print
-	sys.exit(0)
+
+def catch_log_exceptions(oom_log):
+	'''
+	Catch any errors with the analysing of the log file
+	'''
+	try:
+		OOM_record(oom_log)
+	except Exception as error:
+		print ""
+		print bcolors.RED + "Error:" + bcolors.ENDC
+		print error
+		print ""
+	print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+
+
+
+def main():
+	'''
+	Usage and help overview
+	Option pasring
+	'''
+	parser = OptionParser(usage='usage: %prog [option]')
+	parser.add_option("-q", "--quick",
+			action="store_false",
+			dest="quick",
+			default=True,
+			help="Quick Search all rotated system files")
+	parser.add_option("-f", "--file",
+			action="store",
+			dest="file",
+			metavar="File",
+			help="Specify a log to check")
+
+	(options, args) = parser.parse_args()
+	if len(sys.argv) == 2:
+		selected_option =  sys.argv[1:]
+		selected_option = selected_option[0]
+		if selected_option == '-q' or selected_option == '--quick':
+			quick_check_all_logs(find_all_logs(get_log_file()))
+	elif len(sys.argv) == 3:
+		selected_option =  sys.argv[1:]
+                selected_option = selected_option[0]
+		if selected_option == '-f' or selected_option == '--file':
+        	        try:
+	                        catch_log_exceptions(get_log_file())
+                	except(EOFError, KeyboardInterrupt):
+                        	print
+	                        sys.exit(0)
+	else:
+		try:
+			catch_log_exceptions(get_log_file())
+		except(EOFError, KeyboardInterrupt):
+			print
+			sys.exit(0)
+
+
+if __name__ == '__main__':
+	try:
+		main()
+	except(EOFError, KeyboardInterrupt):
+		print
+		sys.exit(0)
