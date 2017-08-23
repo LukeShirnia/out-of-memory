@@ -19,6 +19,7 @@ Usage:
 ![OOMUsage.png output](docs/images/OOMUsage.png)
 
 
+
 There are currently 3 methods for running.
 
 > If no argument is parsed, it will default to using the current ACTIVE system log:
