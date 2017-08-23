@@ -93,7 +93,7 @@ This section is a quick overview of the log file used for reference.
 <br />
 Example:
 
-![Example LogInformation.png output](docs/images/LogInformation.png)
+![LogInformation.png output](docs/images/LogInformation.png)
 
 
 ```
