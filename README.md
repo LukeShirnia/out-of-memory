@@ -95,14 +95,6 @@ Example:
 
 ![LogInformation.png output](docs/images/LogInformation.png)
 
-
-```
-Log Information
-Log File  :  /var/log/messages 
-Start date:  Jun, 20, 06:46:37 
-End Date  :  Jun, 21, 08:32:24 
-```
-
 <br />
 
 ### Section 2 - Total Services Killed 
@@ -110,15 +102,7 @@ During out-of-memory investigations its not always obvious what service(s) have 
 <br />
 Example:
 
-```
-Number of OOM occurrences in log file:  x
-
-Service apache       Killed x time(s)
-Service perl	     Killed x time(s)
-Service php          Killed x time(s)
-Service mysqld       Killed x time(s)
-Service sh           Killed x time(s)
-```
+![KilledServices.png output](docs/images/KilledServices.png)
 
 <br />
 
@@ -127,20 +111,7 @@ This helps narrow down problematic times such as; peak traffic times, backup tim
 <br />
 Example:
 
-```
-KEY
-D = Date(s) OOM
-H = Hour OOM Occurred
-O = Number of Occurrences in Date/Hour
-
-D      H  O
-Jun 20 23 4
-Jun 21 00 56
-Jun 21 01 114
-Jun 21 02 105
-Jun 21 03 105
-Jun 21 04 87
-```
+![OOMOccurrences.png output](docs/images/OOMOccurrences.png)
 
 <br />
 
