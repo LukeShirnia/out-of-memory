@@ -21,16 +21,16 @@ Usage:
 
 There are currently 3 methods for running.
 
-> If no argument is parsed, it will default to using the current ACTIVE system log:
+If no argument is parsed, it will default to using the current ACTIVE system log:
 
 ```
 python oom-investigate.py
 ```
-> You can also specify an old/rotated/compresses log:
+You can also specify an old/rotated/compresses log:
 ```
 python oom-investigate.py -f <old_rotated_file>
 ```
-> Or you can summarise the log files quickly with:
+Or you can summarise the log files quickly with:
 ```
 python oom-investigate.py -q
 ```
