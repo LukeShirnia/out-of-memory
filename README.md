@@ -235,37 +235,4 @@ This example shows the output when NO oom has occurred in the log file. NO optio
 
 The script will now prompt you to enter an option if the main file doesn't contain any oom incidents but another file does:
 
-```
-----------------------------------------
-      _____ _____ _____ 
-     |     |     |     |
-     |  |  |  |  | | | |
-     |_____|_____|_|_|_|
-     Out Of Memory Analyser
-
-Disclaimer:
-If system OOMs too viciously, there may be nothing logged!
-Do NOT take this script as FACT, investigate further
-----------------------------------------
-
-Log Information
-Log File  :  /var/log/messages 
-Start date:  May, 7, 08:08:18 
-End Date  :  May, 8, 14:30:01 
-
-
-----------------------------------------
-OOM has NOT occured in specified log file!
-----------------------------------------
-
-Checking other logs, select an option:
-Option: 1  /var/log/messages-20170219.gz - Occurrences: 68
-           /var/log/messages-20170731 - Occurrences: 0
-           /var/log/messages-20170806 - Occurrences: 0
-           /var/log/messages-20170814 - Occurrences: 0
-           /var/log/messages-20170820 - Occurrences: 0
-Option: 2  /var/log/messages.1        - Occurrences: 1
-
-Which file should we check next?
-Select an option number between 1 and 2:
-```
+![OOMUsage.png output](docs/images/OOMUsage.png)
