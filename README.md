@@ -21,16 +21,16 @@ Usage:
 
 There are currently 3 methods for running.
 
-If no argument is parsed, it will default to using the current ACTIVE system log:
+> If no argument is parsed, it will default to using the current ACTIVE system log:
 
 ```
 python oom-investigate.py
 ```
-You can also specify an old/rotated/compresses log:
+> You can also specify an old/rotated/compresses log:
 ```
 python oom-investigate.py -f <old_rotated_file>
 ```
-Or you can summarise the log files quickly with:
+> Or you can summarise the log files quickly with:
 ```
 python oom-investigate.py -q
 ```
@@ -112,23 +112,7 @@ This section allows you to narrow down the cause of heaviest memory consumer. Th
 <br />
 Example:
 
-```
- ----------------------------------------
-Jun 20 00:00:00 
-System RAM:              x MB
-Estimated RAM at OOM:   x MB
-Services Killed:        php, apache 
-
-Top 5 RAM Consumers at time of OOM:
-Service: apache2               x MB 
-Service: php5                  x MB 
-Service: perl		       x MB 
-Service: gunicorn              x MB 
-Service: mysqld                x MB 
-
-----------------------------------------
-```
-
+![Top5Consumer.png output](docs/images/Top5Consumer.png)
 
 <br />
 
