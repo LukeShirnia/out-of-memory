@@ -235,4 +235,4 @@ This example shows the output when NO oom has occurred in the log file. NO optio
 
 The script will now prompt you to enter an option if the main file doesn't contain any oom incidents but another file does:
 
-![OOMUsage.png output](docs/images/OOMUsage.png)
+![NoOOM.png output](docs/images/NoOOM.png)
