@@ -15,17 +15,9 @@ The script looks in `/var/log/messages` or `/var/log/syslog` and takes the value
 
 Usage:
 
-```
 
-Usage: oom-investigate.py [option]
+![OOMUsage.png output](docs/images/OOMUsage.png)
 
-Options:
-  -h, --help            show this help message and exit
-  -q, --quick           Quick Search all rotated system files
-  -f File, --file=File  Specify a log to check
-
-
-```
 
 There are currently 3 methods for running.
 
