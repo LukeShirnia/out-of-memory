@@ -93,6 +93,9 @@ This section is a quick overview of the log file used for reference.
 <br />
 Example:
 
+![Example LogInformation.png output](docs/images/LogInformation.png)
+
+
 ```
 Log Information
 Log File  :  /var/log/messages 
