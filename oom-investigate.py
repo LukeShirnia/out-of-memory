@@ -32,6 +32,7 @@ class bcolors:
 
 total_individual = []
 CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
+CentOS_RedHat_Version = ['5']
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 
@@ -130,8 +131,10 @@ def print_oom_output(i, date_format, system_resources, total_rss_per_incident, k
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE, all_killed_services):
 	'''
-	Check if OOM incident occurred. ADD FUNCTION TO PROMPT FOR OTHER LOG FILES
+	Check if OOM incident occurred.
 	'''
+	if all_killed_services == [] and counter == 1:
+		print "Nothing"
 	date_format = []
         for p in oom_date_count:
                 p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
@@ -144,7 +147,6 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 	counter = counter - 1
         if counter == 1: # if only 1 instance of oom then print all
 		date_check(oom_date_count)
-                #for i in (1):
 		i = 1
 		print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list,)
 	elif counter == 2: # if only 3 instance of oom then print all
@@ -160,12 +162,12 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
                 print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
                 print "-" * 40
 		print ""
-		#quick_check_all_logs(find_all_logs(OOM_LOG)) # print similar log files to check for an issue
-		quick_check_all_logs(find_all_logs(LOG_FILE)) # print similar log files to check for an issue
+		option = 'exclude'
+		quick_check_all_logs(find_all_logs(LOG_FILE, option)) # print similar log files to check for an issue
 		print ""
 
 
-def find_all_logs(OOM_LOG):
+def find_all_logs(OOM_LOG, option):
 	'''
 	This function finds all log files in the directory of default log file (or specified log file)
 	'''
@@ -180,14 +182,15 @@ def find_all_logs(OOM_LOG):
 	result.sort()
 	if len(result) > 1:
 		print bcolors.YELLOW + "Checking other logs, select an option:" + bcolors.ENDC
-		while OOM_LOG in result:
-			result.remove(OOM_LOG)
+		if option == 'exclude':
+			while OOM_LOG in result:
+				result.remove(OOM_LOG)
 	return result
 
 
 def quick_check_all_logs(results):
 	'''
-	Quickly check all log files for oom incidents
+	Quickly check all log files for oom incidents (-q, --quick)
 	'''
 	option = 1
 	next_logs_to_search = []
@@ -465,13 +468,13 @@ def OOM_record(LOG_FILE):
 
 
 def file_size(file_path):
-    """
-    This function will return the file size of the script.
-    Currently HUGE OOM log file will cause memory issues, this is to prevent that
-    """
-    if os.path.isfile(file_path):
-        file_info = os.stat(file_path)
-        return int((file_info.st_size) / 1024 ) / 1024
+	"""
+	This function will return the file size of the script.
+	Currently HUGE OOM log file will cause memory issues, this is to prevent that
+	"""
+	if os.path.isfile(file_path):
+		file_info = os.stat(file_path)
+		return int((file_info.st_size) / 1024 ) / 1024
 
 
 def get_log_file():
@@ -563,7 +566,8 @@ def main():
 		selected_option =  sys.argv[1:]
 		selected_option = selected_option[0]
 		if selected_option == '-q' or selected_option == '--quick':
-			quick_check_all_logs(find_all_logs(get_log_file()))
+			option = 'quick'
+			quick_check_all_logs(find_all_logs(get_log_file(), option))
 	elif len(sys.argv) == 3:
 		selected_option =  sys.argv[1:]
                 selected_option = selected_option[0]
