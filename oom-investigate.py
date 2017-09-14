@@ -18,19 +18,19 @@ import subprocess
 
 
 class bcolors:
-    '''
+	'''
 	Class used for colour formatting
-    '''
-    HEADER = '\033[95m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    PURPLE = '\033[35m'
-    LIGHTRED = '\033[91m'
-    CYAN = '\033[36m'
-    UNDERLINE = '\033[4m'
+	'''
+	HEADER = '\033[95m'
+	RED = '\033[91m'
+	ENDC = '\033[0m'
+	BOLD = '\033[1m'
+	GREEN = '\033[92m'
+	YELLOW = '\033[93m'
+	PURPLE = '\033[35m'
+	LIGHTRED = '\033[91m'
+	CYAN = '\033[36m'
+	UNDERLINE = '\033[4m'
 
 total_individual = []
 CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
@@ -48,7 +48,6 @@ def print_header():
         print "     |  |  |  |  | | | |"
         print "     |_____|_____|_|_|_|"
         print "     Out Of Memory Analyser"
-        #print ""
 	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC
 	print bcolors.RED + "If system OOMs too viciously, there may be nothing logged!"
 	print "Do NOT take this script as FACT, investigate further" + bcolors.ENDC
@@ -60,7 +59,6 @@ def neat_oom_invoke():
 	Print WARNING if there is an OOM issue
 	'''
         print bcolors.RED + bcolors.BOLD + "#### OOM ISSUE ####" + bcolors.ENDC
-#        print ""
 
 
 def os_check():
@@ -127,7 +125,10 @@ def print_oom_output(i, date_format, system_resources, total_rss_per_incident, k
         print ""
         print bcolors.UNDERLINE + "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC
         for x in service_value_list[i]:
- 	       print "Service: {0:20}  {1} MB ".format(x[0], x[1])
+		_service_name = x[0]
+		_process_count = "(%s)" % x[1]
+		_service_mb = x[2]
+		print "Service: {0:<12} {1:>6}  {2: >6} MB ".format(_service_name[:12], _process_count, _service_mb)
 
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE, all_killed_services):
@@ -149,9 +150,8 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
         if counter == 1: # if only 1 instance of oom then print all
 		date_check(oom_date_count)
 		i = 1
-		print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list,)
+		print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
 		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
-		#check_dmesg(len(oom_date_count))
 	elif counter == 2: # if only 3 instance of oom then print all
 		date_check(oom_date_count)
 		for i in (1, 2):
@@ -286,7 +286,6 @@ def _compare_dmesg(dmesg_count, oom_date_count):
         elif dmesg_count > oom_date_count:
                 print ""
                 print bcolors.YELLOW + "Note: " + bcolors.ENDC + "More reported " + bcolors.RED + "errors " + bcolors.ENDC + "in dmesg " + bcolors.PURPLE + "({0})".format(dmesg_count) + bcolors.ENDC  + " than current log file " + bcolors.PURPLE  + "({0})".format(oom_date_count) + bcolors.ENDC
-                #print "Old log files have been rotated and possibly purged"
                 print "Run with " + bcolors.GREEN + "--quick" + bcolors.ENDC + " option to check available log files"
 		print ""
 
@@ -308,8 +307,6 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
 	print bcolors.GREEN + "Start date: " + bcolors.ENDC + bcolors.YELLOW  + " %s " % (", ".join(first_line)) + bcolors.ENDC
 	print bcolors.GREEN + "End Date  : " + bcolors.ENDC + bcolors.YELLOW  + " %s " % (", ".join(last_line)) + bcolors.ENDC
 	print ""
-	##################################################################################################################################
-#	check_dmesg(len(oom_date_count))
 	if len(oom_date_count) > 4:
 		neat_oom_invoke()
         	print "Number of OOM occurrence in log file: "  + bcolors.RED + " %s " % (len(oom_date_count) -1 ) + bcolors.ENDC
@@ -318,7 +315,6 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
 		"Number of OOM occurrence in log file: %s " % (len(oom_date_count))
 	else:
 		"Number of OOM occurrence in log file: %s " % (len(oom_date_count))
-#        print ""
 	all_killed_services = dict((i, all_killed_services.count(i)) for i in all_killed_services) # working dict count
 	ServiceCount = sorted( ((v,k) for k,v in all_killed_services.iteritems()), reverse=True)
 	for i in ServiceCount:
@@ -357,13 +353,15 @@ def add_rss_for_processes(unique, list_of_values):
         total_service_usage = []
         del total_service_usage[:]
         for i in unique:
+		counter = 0
                 del values_to_add[:]
                 for x in list_of_values:
                         if i == x[1]:
+				counter += 1
                                 number = int(x[0])
                                 values_to_add.append(number)
                 added_values = ( sum(values_to_add) * 4 ) / 1024 # work out rss in MB
-                string = i, added_values
+                string = i, counter, added_values
                 total_service_usage.append(string)
         return total_service_usage
 
@@ -444,7 +442,6 @@ def date_check(oom_date_count):
 	for value in dates_test:
 		print value
 	
-        #print ""
 	print ""
         if len(oom_date_count) >= 3:
 		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurrence" % (len(oom_date_count)) + bcolors.ENDC
@@ -466,7 +463,7 @@ def OOM_record(LOG_FILE):
   total_service_list = []
   all_killed_services = []
   normal_file = (False if LOG_FILE.endswith('.gz') else True)
-  inLogFile = openfile(LOG_FILE, normal_file) #, open("/home/rack/oom", "w") as outfile:
+  inLogFile = openfile(LOG_FILE, normal_file)
   record = False
   record_oom_true_false = False
   counter = 1
@@ -495,7 +492,7 @@ def OOM_record(LOG_FILE):
       list_of_values[counter] = filter(None, list_of_values[counter])
       unique = find_unique_services(list_of_values[counter])
       oom_services = add_rss_for_processes(unique, list_of_values[counter])
-      oom_services = sorted(oom_services,key=lambda x: x[1], reverse=True)
+      oom_services = sorted(oom_services,key=lambda x: x[2], reverse=True)
       service_value_list[counter] = oom_services
       service_value_list[counter] = service_value_list[counter][:5]
       record_oom_true_false = True
@@ -591,7 +588,6 @@ def catch_log_exceptions(oom_log):
 		print bcolors.RED + "Error:" + bcolors.ENDC
 		print error
 		print ""
-#	print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 
 
 
