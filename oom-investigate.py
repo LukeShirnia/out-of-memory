@@ -357,9 +357,12 @@ def add_rss_for_processes(unique, list_of_values):
                 del values_to_add[:]
                 for x in list_of_values:
                         if i == x[1]:
-				counter += 1
+                            try:
+			        counter += 1
                                 number = int(x[0])
                                 values_to_add.append(number)
+                            except:
+                                pass
                 added_values = ( sum(values_to_add) * 4 ) / 1024 # work out rss in MB
                 string = i, counter, added_values
                 total_service_usage.append(string)
@@ -499,10 +502,13 @@ def OOM_record(LOG_FILE):
       record = False
       counter += 1
     elif record:
-      line = strip_line(line)
-      list_of_values[counter].append(save_values(line, column_number)) #service rss calulation initiation
-      rss_value = strip_rss(line, column_number)
-      total_rss[counter].append(rss_value) # calculate total value of all processes
+      try:
+        line = strip_line(line)
+        list_of_values[counter].append(save_values(line, column_number)) #service rss calulation initiation
+        rss_value = strip_rss(line, column_number)
+        total_rss[counter].append(rss_value) # calculate total value of all processes
+      except:
+        pass
     elif record_oom_true_false and killed:
       killed = killed.group(1)
       killed = strip_line(killed)
