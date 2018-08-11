@@ -2,6 +2,7 @@
 # Author:       Luke Shirnia
 # Source:       https://github.com/LukeShirnia/out-of-memory/
 
+
 from sys import argv
 import sys
 import platform
@@ -17,7 +18,7 @@ from optparse import OptionParser
 
 class bcolors:
     '''
-	Class used for colour formatting
+    Class used for colour formatting
     '''
     HEADER = '\033[95m'
     RED = '\033[91m'
@@ -31,67 +32,70 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 total_individual = []
-CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
+CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat', 'fedora']
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 
 def print_header():
-	'''
-	Disclaimer and Script Header
-	'''
-        print bcolors.CYAN + "-" * 40 + bcolors.ENDC
-        print "      _____ _____ _____ "
-        print "     |     |     |     |"
-        print "     |  |  |  |  | | | |"
-        print "     |_____|_____|_|_|_|"
-        print "     Out Of Memory Analyser"
-        print ""
-	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC
-	print bcolors.RED + "If system OOMs too viciously, there may be nothing logged!"
-	print "Do NOT take this script as FACT, investigate further" + bcolors.ENDC
-        print bcolors.CYAN + "-" * 40 + bcolors.ENDC
+    '''
+    Disclaimer and Script Header
+    '''
+    print bcolors.CYAN + "-" * 40 + bcolors.ENDC
+    print "      _____ _____ _____ "
+    print "     |     |     |     |"
+    print "     |  |  |  |  | | | |"
+    print "     |_____|_____|_|_|_|"
+    print "     Out Of Memory Analyser"
+    print ""
+    print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC
+    print bcolors.RED + \
+        "If system OOMs too viciously, there may be nothing logged!"
+    print "Do NOT take this script as FACT, investigate further" \
+        + bcolors.ENDC
+    print bcolors.CYAN + "-" * 40 + bcolors.ENDC
 
 
 def neat_oom_invoke():
-	'''
-	Print WARNING if there is an OOM issue
-	'''
-        print bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" + bcolors.ENDC
-        print ""
+    '''
+    Print WARNING if there is an OOM issue
+    '''
+    print bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" \
+        + bcolors.ENDC
+    print ""
 
 
 def os_check():
-	'''
-	Make sure this is being run on a Linux device first	
-	'''
-        os_platform = platform.system()
-        if os_platform == "Linux":
-                distro = platform.linux_distribution()[0]
-                distro = distro.split()[0]
-                return distro
-        else:
-                print "Stop Using a Rubbish OS!!"
+    '''
+    Make sure this is being run on a Linux device first
+    '''
+    os_platform = platform.system()
+    if os_platform == "Linux":
+        distro = platform.linux_distribution()[0]
+        distro = distro.split()[0]
+        return distro
+    else:
+        print "Stop Using a Rubbish OS!!"
 
 
 def system_resources():
-	'''
-	Get the RAM info from /proc
-	'''
-	with open("/proc/meminfo", "r") as meminfo:
-		for lines in meminfo:
-			if "MemTotal" in lines.strip():
-				memory_value = int(lines.split()[1])
-				system_memory = memory_value / 1024
-				return system_memory
+    '''
+    Get the RAM info from /proc
+    '''
+    with open("/proc/meminfo", "r") as meminfo:
+        for lines in meminfo:
+            if "MemTotal" in lines.strip():
+                memory_value = int(lines.split()[1])
+                system_memory = memory_value / 1024
+                return system_memory
 
 
 def strip_rss(line, column_number):
-	'''
-	Obtain the RSS value of a service from the line
-	'''
-	line = line.split()
-	value = int(line[column_number-1])
-	return value
+    '''
+    Obtain the RSS value of a service from the line
+    '''
+    line = line.split()
+    value = int(line[column_number-1])
+    return value
 
 
 def add_rss(total_rss):
@@ -103,7 +107,8 @@ def add_rss(total_rss):
 
 def strip_line(line):
 	'''
-	Stripping all non required characters from the line so not to interfere with line.split()
+	Stripping all non required characters from the line so not to
+	interfere with line.split()
 	'''
 	for ch in ["[","]","}","{","'", "(",")"]:
 		if ch in line:
@@ -247,7 +252,15 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
 	first_line = inLogFile.readline().split()[0:3]
 	lineList = inLogFile.readlines()
 	inLogFile.close()
-	last_line = (lineList[len(lineList)-1])
+	try:
+	    last_line = (lineList[len(lineList)-1])
+	except IndexError:
+		print("")
+		print("File appears to be corrupt or empty")
+		print("Please check:")
+		print("             {0}".format(LOG_FILE))
+		print("")
+		sys.exit(1)
 	last_line = last_line.split()[0:3]
 	print ""
 	print bcolors.UNDERLINE + "Log Information" +bcolors.ENDC
@@ -352,7 +365,7 @@ def strip_time(date_time):
 	'''
 	return date_time + datetime.timedelta(hours = 1, minutes = -date_time.minute, seconds = -date_time.second)
 
-	
+
 def date_time_counter_split(dates_sorted):
 	'''
 	Split the date and OOM count ('May 12': 1) into 2 strings and back into 1 string
@@ -365,7 +378,7 @@ def date_time_counter_split(dates_sorted):
 		sorted_dates.append(date + " " + str(occurences))
 	return sorted_dates
 
-	
+
 def date_check(oom_date_count):
 	'''
 	The function is used to produce a list of dates +inc hour of every oom occurrence in the log file
@@ -397,69 +410,73 @@ def date_check(oom_date_count):
 
 
 def OOM_record(LOG_FILE):
-  '''
-	Takes 1 argument - the log file to check
-	Checks line-by-line for specific string match that indicated OOM has taken place
-  '''
-  oom_date_count = []
-  running_service = []
-  list_of_values = {}
-  total_rss = {}
-  killed_services = {}
-  unique_services = {}
-  service_value_list = {}
-  total_service_list = []
-  all_killed_services = []
-  normal_file = (False if LOG_FILE.endswith('.gz') else True)
-  inLogFile = openfile(LOG_FILE, normal_file) #, open("/home/rack/oom", "w") as outfile:
-  record = False
-  record_oom_true_false = False
-  counter = 1
-  oom_line_length = 0
-  for line in inLogFile:
-    killed = re.search("Killed process (.*) total", line)
-    if "[ pid ]   uid  tgid total_vm      rss" in line.strip() and "kernel" in line.lower():
-      oom_line_length = len(line.strip())
-      total_rss[counter] = []
-      killed_services[counter] = []
-      unique_services[counter] = []
-      list_of_values[counter] = []
-      record = True
-      record_oom_true_false = False
-      oom_date_count.append(date_time(line))
-      line = strip_line(line)
-      column_number = find_rss_column(line.split())
-    elif "kernel" not in line.lower() and record == True: # Skips log entries that may be interfering with oom output from kernel
-      pass
-    elif " hi:" in line.strip() and record == True:
-      pass
-    elif "MAC=" in line.strip() and record == True: # Skips log entires in Ubuntu/Debian intefering with oom output
-      pass
-    elif "Out of memory" in line.strip() and record == True or len(line.split()) < 14  and record == True :
-      service_value_list[counter] = []
-      list_of_values[counter] = filter(None, list_of_values[counter])
-      unique = find_unique_services(list_of_values[counter])
-      oom_services = add_rss_for_processes(unique, list_of_values[counter])
-      oom_services = sorted(oom_services,key=lambda x: x[1], reverse=True)
-      service_value_list[counter] = oom_services
-      service_value_list[counter] = service_value_list[counter][:5]
-      record_oom_true_false = True
-      record = False
-      counter += 1
-    elif record:
-      line = strip_line(line)
-      list_of_values[counter].append(save_values(line, column_number)) #service rss calulation initiation
-      rss_value = strip_rss(line, column_number)
-      total_rss[counter].append(rss_value) # calculate total value of all processes
-    elif record_oom_true_false and killed:
-      killed = killed.group(1)
-      killed = strip_line(killed)
-      killed = killed.split(",")[-1]
-      killed = killed.strip("0123456789 ")
-      killed_services[counter-1].append(killed)
-      all_killed_services.append(killed)
-  inLogFile.close()
-  check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE, all_killed_services)
+    '''
+    Takes 1 argument - the log file to check
+    Checks line-by-line for specific string match that indicated OOM has taken place
+    '''
+    oom_date_count = []
+    running_service = []
+    list_of_values = {}
+    total_rss = {}
+    killed_services = {}
+    unique_services = {}
+    service_value_list = {}
+    total_service_list = []
+    all_killed_services = []
+    try:
+        normal_file = (False if LOG_FILE.endswith('.gz') else True)
+    except AttributeError:
+	    normal_file = True
+    print LOG_FILE
+    inLogFile = openfile(LOG_FILE, normal_file)
+    record = False
+    record_oom_true_false = False
+    counter = 1
+    oom_line_length = 0
+    for line in inLogFile:
+        killed = re.search("Killed process (.*) total", line)
+        if "[ pid ]   uid  tgid total_vm      rss" in line.strip() and "kernel" in line.lower():
+            oom_line_length = len(line.strip())
+            total_rss[counter] = []
+            killed_services[counter] = []
+            unique_services[counter] = []
+            list_of_values[counter] = []
+            record = True
+            record_oom_true_false = False
+            oom_date_count.append(date_time(line))
+            line = strip_line(line)
+            column_number = find_rss_column(line.split())
+        elif "kernel" not in line.lower() and record == True: # Skips log entries that may be interfering with oom output from kernel
+            pass
+        elif " hi:" in line.strip() and record == True:
+            pass
+        elif "MAC=" in line.strip() and record == True: # Skips log entires in Ubuntu/Debian intefering with oom output
+            pass
+        elif "Out of memory" in line.strip() and record == True or len(line.split()) < 14  and record == True :
+            service_value_list[counter] = []
+            list_of_values[counter] = filter(None, list_of_values[counter])
+            unique = find_unique_services(list_of_values[counter])
+            oom_services = add_rss_for_processes(unique, list_of_values[counter])
+            oom_services = sorted(oom_services,key=lambda x: x[1], reverse=True)
+            service_value_list[counter] = oom_services
+            service_value_list[counter] = service_value_list[counter][:5]
+            record_oom_true_false = True
+            record = False
+            counter += 1
+        elif record:
+            line = strip_line(line)
+            list_of_values[counter].append(save_values(line, column_number)) #service rss calulation initiation
+            rss_value = strip_rss(line, column_number)
+            total_rss[counter].append(rss_value) # calculate total value of all processes
+        elif record_oom_true_false and killed:
+            killed = killed.group(1)
+            killed = strip_line(killed)
+            killed = killed.split(",")[-1]
+            killed = killed.strip("0123456789 ")
+            killed_services[counter-1].append(killed)
+            all_killed_services.append(killed)
+    inLogFile.close()
+    check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE, all_killed_services)
 
 
 def file_size(file_path):
@@ -482,7 +499,8 @@ def get_log_file():
         	if os_check_value.lower() in CentOS_RedHat_Distro:
                 	system_rss = system_resources()
 			OOM_LOG = "/var/log/messages"
-			if file_size(OOM_LOG) < 250:
+			size_of_file = file_size(OOM_LOG)
+			if size_of_file < 250:
 				return OOM_LOG
 				print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 			else:
@@ -491,7 +509,7 @@ def get_log_file():
 				print "Please consider splitting the file into smaller chunks (such as dates)"
 	        elif os_check_value.lower() in Ubuntu_Debian_Distro:
 			OOM_LOG = "/var/log/syslog"
-			if file_size(OOM_LOG) < 250:
+			if size_of_file < 250:
 				return OOM_LOG
 				print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 			else:
@@ -499,26 +517,30 @@ def get_log_file():
 	                        print "!!! File is too LARGE !!!"
 	                        print "Please consider splitting the file into smaller chunks (such as dates)"
 	        else:
-	                print "Unsupported OS"
+	            print "Unsupported OS"
+                print "1"
 	elif len(argv) == 3:
 		script, option ,OOM_LOG = argv
+		size_of_file = file_size(OOM_LOG)
 	        if os_check_value.lower() in CentOS_RedHat_Distro:
 	                system_rss = system_resources()
-			if file_size(OOM_LOG) < 250: # check file size is below 250 MB
+			if size_of_file < 250: # check file size is below 250 MB
 				return OOM_LOG
 			else:
 				print
 				print "!!! File is too LARGE !!!"
 	                        print "Please consider splitting the file into smaller chunks (such as dates)"
 	        elif os_check_value.lower() in Ubuntu_Debian_Distro:
-			if file_size(OOM_LOG) < 250:
+			if size_of_file < 250:
 				return OOM_LOG
 			else:
 				print
 	                        print "!!! File is too LARGE !!!"
 	                        print "Please consider splitting the file into smaller chunks (such as dates)"
 	        else:
-	                print "Unsupported OS"
+	            print "Unsupported OS"
+                print OOM_LOG
+                print "2"
 	else:
 	        print "Too Many Arguments - ", ( len(argv) -1 )
 		print "Try again"
@@ -528,14 +550,14 @@ def catch_log_exceptions(oom_log):
 	'''
 	Catch any errors with the analysing of the log file
 	'''
-	try:
-		OOM_record(oom_log)
-	except Exception as error:
-		print ""
-		print bcolors.RED + "Error:" + bcolors.ENDC
-		print error
-		print ""
-	print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+	#try:
+	OOM_record(oom_log)
+	#except Exception as error:
+	#	print ""
+	#	print bcolors.RED + "Error:" + bcolors.ENDC
+	#	print error
+	#	print ""
+	#print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 
 
 
@@ -584,4 +606,4 @@ if __name__ == '__main__':
 		main()
 	except(EOFError, KeyboardInterrupt):
 		print
-		sys.exit(0)
+		sys.exit(1)
