@@ -330,12 +330,19 @@ def openfile(filename, normal_file):
 	'''
 	Check if input file is a compressed or regular file
 	'''
-	if normal_file:
-		return open(filename, "r")
-	elif filename.endswith('.gz'):
-        	return gzip.open(filename, "r")
-	else:
-		return open(filename, "r")
+	try:
+	    if normal_file:
+	    	return open(filename, "r")
+	    elif filename.endswith('.gz'):
+            	return gzip.open(filename, "r")
+	    else:
+	    	return open(filename, "r")
+	except IOError:
+		print("")
+		print("Does the file specified exist? {0}".format(filename))
+		print("Please check again")
+		print("")
+		sys.exit(1)
 
 
 def find_rss_column(line): 
