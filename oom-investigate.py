@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# 
 # Author:       Luke Shirnia
 # Source:       https://github.com/LukeShirnia/out-of-memory/
 
@@ -14,9 +15,11 @@ import os
 import fnmatch
 import collections
 from optparse import OptionParser
+import subprocess
 
 
 class bcolors:
+<<<<<<< HEAD
     '''
     Class used for colour formatting
     '''
@@ -33,10 +36,30 @@ class bcolors:
 
 total_individual = []
 CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat', 'fedora']
+=======
+	'''
+	Class used for colour formatting
+	'''
+	HEADER = '\033[95m'
+	RED = '\033[91m'
+	ENDC = '\033[0m'
+	BOLD = '\033[1m'
+	GREEN = '\033[92m'
+	YELLOW = '\033[93m'
+	PURPLE = '\033[35m'
+	LIGHTRED = '\033[91m'
+	CYAN = '\033[36m'
+	UNDERLINE = '\033[4m'
+
+total_individual = []
+CentOS_RedHat_Distro = ['redhat', 'centos', 'red', 'red hat']
+CentOS_RedHat_Version = ['5']
+>>>>>>> 786db070d5e68549ce3ecc18a019c7b31878c252
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 
 def print_header():
+<<<<<<< HEAD
     '''
     Disclaimer and Script Header
     '''
@@ -62,6 +85,28 @@ def neat_oom_invoke():
     print bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" \
         + bcolors.ENDC
     print ""
+=======
+	'''
+	Disclaimer and Script Header
+	'''
+        print bcolors.CYAN + "-" * 40 + bcolors.ENDC
+        print "      _____ _____ _____ "
+        print "     |     |     |     |"
+        print "     |  |  |  |  | | | |"
+        print "     |_____|_____|_|_|_|"
+        print "     Out Of Memory Analyser"
+	print bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC
+	print bcolors.RED + "If system OOMs too viciously, there may be nothing logged!"
+	print "Do NOT take this script as FACT, investigate further" + bcolors.ENDC
+        print bcolors.CYAN + "-" * 40 + bcolors.ENDC
+
+
+def neat_oom_invoke():
+	'''
+	Print WARNING if there is an OOM issue
+	'''
+        print bcolors.RED + bcolors.BOLD + "#### OOM ISSUE ####" + bcolors.ENDC
+>>>>>>> 786db070d5e68549ce3ecc18a019c7b31878c252
 
 
 def os_check():
@@ -121,22 +166,26 @@ def print_oom_output(i, date_format, system_resources, total_rss_per_incident, k
 	Print the Output of an OOM incident (Inc TOP 5 RAM consumers)
 	'''
 	print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+	print ""
         print bcolors.BOLD + bcolors.PURPLE + "{0} ".format(date_format[i - 1]) + bcolors.ENDC
-        print bcolors.YELLOW + "System RAM:              " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(system_resources()) + bcolors.ENDC
-        print bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC + bcolors.CYAN + "{0} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
-        print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
+        print bcolors.YELLOW + "Available RAM:        " + bcolors.ENDC + bcolors.CYAN + "{0:<3} MB".format(system_resources()) + bcolors.ENDC
+        print bcolors.YELLOW + "Estimated RAM at OOM: " + bcolors.ENDC + bcolors.CYAN + "{0:<3} MB".format(sum(total_rss_per_incident[i] * 4 ) / 1024) + bcolors.ENDC
+        print bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED + " Killed:      " + bcolors.ENDC + bcolors.RED + "{0} ".format(", ".join(killed_services[i])) + bcolors.ENDC
         print ""
         print bcolors.UNDERLINE + "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC
         for x in service_value_list[i]:
- 	       print "Service: {0:20}  {1} MB ".format(x[0], x[1])
-        print ""
-
+		_service_name = x[0]
+		_process_count = "(%s)" % x[1]
+		_service_mb = x[2]
+		print "Service: {0:<12} {1:>6}  {2: >6} MB ".format(_service_name[:12], _process_count, _service_mb)
 
 
 def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_services, service_value_list, LOG_FILE, all_killed_services):
 	'''
-	Check if OOM incident occurred. ADD FUNCTION TO PROMPT FOR OTHER LOG FILES
+	Check if OOM incident occurred.
 	'''
+	if all_killed_services == [] and counter == 1:
+		print "Nothing"
 	date_format = []
         for p in oom_date_count:
                 p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
@@ -149,28 +198,30 @@ def check_if_incident(counter, oom_date_count, total_rss_per_incident, killed_se
 	counter = counter - 1
         if counter == 1: # if only 1 instance of oom then print all
 		date_check(oom_date_count)
-                #for i in (1):
 		i = 1
-		print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list,)
+		print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
+		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 	elif counter == 2: # if only 3 instance of oom then print all
 		date_check(oom_date_count)
 		for i in (1, 2):
                         print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
+		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
 	elif counter >= 3: # if more 3 or more oom instances, print 1st, 2nd, last
 		date_check(oom_date_count)
 		for i in (1, 2, counter - 1):
                         print_oom_output(i, date_format, system_resources, total_rss_per_incident, killed_services, service_value_list)
+		print bcolors.BOLD + "-" * 40 + bcolors.ENDC
         else:
                 print "-" * 40
                 print "OOM has " + bcolors.GREEN + "NOT" +bcolors.ENDC + " occured in specified log file!"
                 print "-" * 40
 		print ""
-		#quick_check_all_logs(find_all_logs(OOM_LOG)) # print similar log files to check for an issue
-		quick_check_all_logs(find_all_logs(LOG_FILE)) # print similar log files to check for an issue
+		option = 'exclude'
+		quick_check_all_logs(find_all_logs(LOG_FILE, option)) # print similar log files to check for an issue
 		print ""
 
 
-def find_all_logs(OOM_LOG):
+def find_all_logs(OOM_LOG, option):
 	'''
 	This function finds all log files in the directory of default log file (or specified log file)
 	'''
@@ -185,14 +236,15 @@ def find_all_logs(OOM_LOG):
 	result.sort()
 	if len(result) > 1:
 		print bcolors.YELLOW + "Checking other logs, select an option:" + bcolors.ENDC
-		while OOM_LOG in result:
-			result.remove(OOM_LOG)
+		if option == 'exclude':
+			while OOM_LOG in result:
+				result.remove(OOM_LOG)
 	return result
 
 
 def quick_check_all_logs(results):
 	'''
-	Quickly check all log files for oom incidents
+	Quickly check all log files for oom incidents (-q, --quick)
 	'''
 	option = 1
 	next_logs_to_search = []
@@ -226,8 +278,10 @@ def select_next_logfile(log_file):
 			Not_Integer = True
 			while Not_Integer:
 				print "Which file should we check next?"
-				# option_answer = raw_input("Select an option number between 1 and " + str(len(log_file)) + ": " )
-				option_answer = raw_input("Select an option number between" + bcolors.GREEN + " 1 " + bcolors.ENDC + "and " + bcolors.GREEN + str(len(log_file)) +  bcolors.ENDC +  ": " )
+				tty = open('/dev/tty')
+				print "Select an option number between" + bcolors.GREEN + " 1 " + bcolors.ENDC + "and " + bcolors.GREEN + str(len(log_file)) +  bcolors.ENDC +  ": ",
+                                option_answer = tty.readline().strip()
+                                tty.close()
 				if option_answer.isdigit(): 
 					option_answer = int(option_answer)	
 					option_answer -= 1
@@ -241,6 +295,48 @@ def select_next_logfile(log_file):
 						print
 				else:
 					print "Please select an number"
+
+
+def _dmesg():
+        '''
+        Open a subprocess to read the output of the dmesg command line-by-line
+        '''
+        devnull = open(os.devnull, 'wb')
+        p = subprocess.Popen(("dmesg"), shell=True, stdout=subprocess.PIPE, stderr=devnull)
+        for line in p.stdout:
+                yield line
+        p.wait()
+        devnull.close()
+
+
+def check_dmesg(oom_date_count):
+        '''
+        Read each line and search for oom string
+        '''
+        dmesg_count = []
+        check_dmesg = _dmesg()
+        for dmesg_line in check_dmesg:
+                if "[ pid ]   uid  tgid total_vm      rss" in dmesg_line.lower():
+                        dmesg_count.append(dmesg_line.strip())
+        dmesg_count = filter(None, dmesg_count)
+        _compare_dmesg(len(dmesg_count), oom_date_count)
+
+
+def _compare_dmesg(dmesg_count, oom_date_count):
+        '''
+        Compare dmesg to syslog oom report
+        '''
+        if dmesg_count > oom_date_count and oom_date_count == 0:
+                print ""
+                print bcolors.YELLOW + "Dmesg reporting errors but log files are empty..."
+                print "Log files appear to have been rotated" + bcolors.ENDC
+                print
+                print "dmesg incidents: ", dmesg_count
+        elif dmesg_count > oom_date_count:
+                print ""
+                print bcolors.YELLOW + "Note: " + bcolors.ENDC + "More reported " + bcolors.RED + "errors " + bcolors.ENDC + "in dmesg " + bcolors.PURPLE + "({0})".format(dmesg_count) + bcolors.ENDC  + " than current log file " + bcolors.PURPLE  + "({0})".format(oom_date_count) + bcolors.ENDC
+                print "Run with " + bcolors.GREEN + "--quick" + bcolors.ENDC + " option to check available log files"
+		print ""
 
 
 def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
@@ -276,7 +372,6 @@ def  get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
 		"Number of OOM occurrence in log file: %s " % (len(oom_date_count))
 	else:
 		"Number of OOM occurrence in log file: %s " % (len(oom_date_count))
-        print ""
 	all_killed_services = dict((i, all_killed_services.count(i)) for i in all_killed_services) # working dict count
 	ServiceCount = sorted( ((v,k) for k,v in all_killed_services.iteritems()), reverse=True)
 	for i in ServiceCount:
@@ -315,13 +410,18 @@ def add_rss_for_processes(unique, list_of_values):
         total_service_usage = []
         del total_service_usage[:]
         for i in unique:
+		counter = 0
                 del values_to_add[:]
                 for x in list_of_values:
                         if i == x[1]:
+                            try:
+			        counter += 1
                                 number = int(x[0])
                                 values_to_add.append(number)
+                            except:
+                                pass
                 added_values = ( sum(values_to_add) * 4 ) / 1024 # work out rss in MB
-                string = i, added_values
+                string = i, counter, added_values
                 total_service_usage.append(string)
         return total_service_usage
 
@@ -409,7 +509,6 @@ def date_check(oom_date_count):
 	for value in dates_test:
 		print value
 	
-        print ""
 	print ""
         if len(oom_date_count) >= 3:
 		print bcolors.HEADER + bcolors.UNDERLINE  + "Note:" + bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + bcolors.ENDC + "of the" + bcolors.RED + " %s occurrence" % (len(oom_date_count)) + bcolors.ENDC
@@ -417,6 +516,7 @@ def date_check(oom_date_count):
 
 
 def OOM_record(LOG_FILE):
+<<<<<<< HEAD
     '''
     Takes 1 argument - the log file to check
     Checks line-by-line for specific string match that indicated OOM has taken place
@@ -484,16 +584,85 @@ def OOM_record(LOG_FILE):
             all_killed_services.append(killed)
     inLogFile.close()
     check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE, all_killed_services)
+=======
+  '''
+	Takes 1 argument - the log file to check
+	Checks line-by-line for specific string match that indicated OOM has taken place
+  '''
+  oom_date_count = []
+  running_service = []
+  list_of_values = {}
+  total_rss = {}
+  killed_services = {}
+  unique_services = {}
+  service_value_list = {}
+  total_service_list = []
+  all_killed_services = []
+  normal_file = (False if LOG_FILE.endswith('.gz') else True)
+  inLogFile = openfile(LOG_FILE, normal_file)
+  record = False
+  record_oom_true_false = False
+  counter = 1
+  oom_line_length = 0
+  for line in inLogFile:
+    killed = re.search("Killed process (.*) total", line)
+    if "[ pid ]   uid  tgid total_vm      rss" in line.strip() and "kernel" in line.lower():
+      oom_line_length = len(line.strip())
+      total_rss[counter] = []
+      killed_services[counter] = []
+      unique_services[counter] = []
+      list_of_values[counter] = []
+      record = True
+      record_oom_true_false = False
+      oom_date_count.append(date_time(line))
+      line = strip_line(line)
+      column_number = find_rss_column(line.split())
+    elif "kernel" not in line.lower() and record == True: # Skips log entries that may be interfering with oom output from kernel
+      pass
+    elif " hi:" in line.strip() and record == True:
+      pass
+    elif "MAC=" in line.strip() and record == True: # Skips log entires in Ubuntu/Debian intefering with oom output
+      pass
+    elif "Out of memory" in line.strip() and record == True or len(line.split()) < 14  and record == True :
+      service_value_list[counter] = []
+      list_of_values[counter] = filter(None, list_of_values[counter])
+      unique = find_unique_services(list_of_values[counter])
+      oom_services = add_rss_for_processes(unique, list_of_values[counter])
+      oom_services = sorted(oom_services,key=lambda x: x[2], reverse=True)
+      service_value_list[counter] = oom_services
+      service_value_list[counter] = service_value_list[counter][:5]
+      record_oom_true_false = True
+      record = False
+      counter += 1
+    elif record:
+      try:
+        line = strip_line(line)
+        list_of_values[counter].append(save_values(line, column_number)) #service rss calulation initiation
+        rss_value = strip_rss(line, column_number)
+        total_rss[counter].append(rss_value) # calculate total value of all processes
+      except:
+        pass
+    elif record_oom_true_false and killed:
+      killed = killed.group(1)
+      killed = strip_line(killed)
+      killed = killed.split(",")[-1]
+      killed = killed.strip("0123456789 ")
+      killed_services[counter-1].append(killed)
+      all_killed_services.append(killed)
+  inLogFile.close()
+  check_if_incident(counter, oom_date_count, total_rss, killed_services, service_value_list, LOG_FILE, all_killed_services)
+  check_dmesg(len(oom_date_count))
+>>>>>>> 786db070d5e68549ce3ecc18a019c7b31878c252
 
 
 def file_size(file_path):
-    """
-    This function will return the file size of the script.
-    Currently HUGE OOM log file will cause memory issues, this is to prevent that
-    """
-    if os.path.isfile(file_path):
-        file_info = os.stat(file_path)
-        return int((file_info.st_size) / 1024 ) / 1024
+	"""
+	This function will return the file size of the script.
+	Currently HUGE OOM log file will cause memory issues, this is to prevent that
+	"""
+	if os.path.isfile(file_path):
+		file_info = os.stat(file_path)
+		return int((file_info.st_size) / 1024 ) / 1024
 
 
 def get_log_file():
@@ -557,6 +726,7 @@ def catch_log_exceptions(oom_log):
 	'''
 	Catch any errors with the analysing of the log file
 	'''
+<<<<<<< HEAD
 	#try:
 	OOM_record(oom_log)
 	#except Exception as error:
@@ -565,6 +735,15 @@ def catch_log_exceptions(oom_log):
 	#	print error
 	#	print ""
 	#print bcolors.BOLD + "-" * 40 + bcolors.ENDC
+=======
+	try:
+		OOM_record(oom_log)
+	except Exception as error:
+		print ""
+		print bcolors.RED + "Error:" + bcolors.ENDC
+		print error
+		print ""
+>>>>>>> 786db070d5e68549ce3ecc18a019c7b31878c252
 
 
 
@@ -590,7 +769,8 @@ def main():
 		selected_option =  sys.argv[1:]
 		selected_option = selected_option[0]
 		if selected_option == '-q' or selected_option == '--quick':
-			quick_check_all_logs(find_all_logs(get_log_file()))
+			option = 'quick'
+			quick_check_all_logs(find_all_logs(get_log_file(), option))
 	elif len(sys.argv) == 3:
 		selected_option =  sys.argv[1:]
                 selected_option = selected_option[0]
