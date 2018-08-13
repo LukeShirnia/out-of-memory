@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#
 # Author:       Luke Shirnia
 # Source:       https://github.com/LukeShirnia/out-of-memory/
 
@@ -14,6 +15,7 @@ import os
 import fnmatch
 import collections
 from optparse import OptionParser
+import subprocess
 
 
 class bcolors:
@@ -148,6 +150,8 @@ def check_if_incident(
     '''
     Check if OOM incident occurred. ADD FUNCTION TO PROMPT FOR OTHER LOG FILES
     '''
+    if all_killed_services == [] and counter == 1:
+        print "Nothing"
     date_format = []
 
     for p in oom_date_count:
@@ -158,8 +162,8 @@ def check_if_incident(
         show_full_dates = 4
     else:
         show_full_dates = counter
-        get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services)
-        counter = counter - 1
+    get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services)
+    counter = counter - 1
 
     if counter == 1:  # if only 1 instance of oom then print all
         date_check(oom_date_count)
@@ -185,12 +189,13 @@ def check_if_incident(
             " occured in specified log file!"
         print "-" * 40
         print ""
+        option = 'exclude'
         # print similar log files to check for an issue
-        quick_check_all_logs(find_all_logs(LOG_FILE))
+        quick_check_all_logs(find_all_logs(LOG_FILE, option))
         print ""
 
 
-def find_all_logs(OOM_LOG):
+def find_all_logs(OOM_LOG, option):
     '''
     This function finds all log files in the directory of
     default log file (or specified log file)
@@ -207,8 +212,9 @@ def find_all_logs(OOM_LOG):
     if len(result) > 1:
         print bcolors.YELLOW + \
             "Checking other logs, select an option:" + bcolors.ENDC
-        while OOM_LOG in result:
-            result.remove(OOM_LOG)
+        if option == 'exclude':
+            while OOM_LOG in result:
+                result.remove(OOM_LOG)
     return result
 
 
@@ -252,12 +258,12 @@ def select_next_logfile(log_file):
             Not_Integer = True
             while Not_Integer:
                 print "Which file should we check next?"
-                # option_answer = raw_input("Select an option number between 1
-                # and " + str(len(log_file)) + ": " )
-                option_answer = raw_input(
-                    "Select an option number between" + bcolors.GREEN +
-                    " 1 " + bcolors.ENDC + "and " + bcolors.GREEN +
-                    str(len(log_file)) + bcolors.ENDC + ": ")
+                tty = open('/dev/tty')
+                print "Select an option number between" + bcolors.GREEN + \
+                    " 1 " + bcolors.ENDC + "and " + bcolors.GREEN + \
+                    str(len(log_file)) + bcolors.ENDC + ": "
+                option_answer = tty.readline().strip()
+                tty.close()
                 if option_answer.isdigit():
                     option_answer = int(option_answer)
                     option_answer -= 1
@@ -272,6 +278,55 @@ def select_next_logfile(log_file):
                         print
                 else:
                     print "Please select an number"
+
+
+def _dmesg():
+    '''
+    Open a subprocess to read the output of the dmesg command line-by-line
+    '''
+    devnull = open(os.devnull, 'wb')
+    p = subprocess.Popen(
+        ("dmesg"), shell=True, stdout=subprocess.PIPE, stderr=devnull)
+    for line in p.stdout:
+            yield line
+    p.wait()
+    devnull.close()
+
+
+def check_dmesg(oom_date_count):
+    '''
+    Read each line and search for oom string
+    '''
+    dmesg_count = []
+    check_dmesg = _dmesg()
+    for dmesg_line in check_dmesg:
+        if "[ pid ]   uid  tgid total_vm      rss" in dmesg_line.lower():
+            dmesg_count.append(dmesg_line.strip())
+    dmesg_count = filter(None, dmesg_count)
+    _compare_dmesg(len(dmesg_count), oom_date_count)
+
+
+def _compare_dmesg(dmesg_count, oom_date_count):
+    '''
+    Compare dmesg to syslog oom report
+    '''
+    if dmesg_count > oom_date_count and oom_date_count == 0:
+        print ""
+        print bcolors.YELLOW + \
+            "Dmesg reporting errors but log files are empty..."
+        print "Log files appear to have been rotated" + bcolors.ENDC
+        print
+        print "dmesg incidents: ", dmesg_count
+    elif dmesg_count > oom_date_count:
+        print ""
+        print bcolors.YELLOW + "Note: " + bcolors.ENDC + "More reported " + \
+            bcolors.RED + "errors " + bcolors.ENDC + "in dmesg " + \
+            bcolors.PURPLE + "({0})".format(dmesg_count) + bcolors.ENDC + \
+            " than current log file " + bcolors.PURPLE + "({0})".format(
+                oom_date_count) + bcolors.ENDC
+        print "Run with " + bcolors.GREEN + "--quick" + bcolors.ENDC + \
+            " option to check available log files"
+        print ""
 
 
 def get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
@@ -358,13 +413,18 @@ def add_rss_for_processes(unique, list_of_values):
     total_service_usage = []
     del total_service_usage[:]
     for i in unique:
+        counter = 0
         del values_to_add[:]
         for x in list_of_values:
             if i == x[1]:
-                number = int(x[0])
-                values_to_add.append(number)
+                try:
+                    counter += 1
+                    number = int(x[0])
+                    values_to_add.append(number)
+                except:
+                    pass
         added_values = (sum(values_to_add) * 4) / 1024  # work out rss in MB
-        string = i, added_values
+        string = i, counter, added_values
         total_service_usage.append(string)
     return total_service_usage
 
@@ -460,16 +520,15 @@ def date_check(oom_date_count):
         + bcolors.UNDERLINE + "O" + bcolors.ENDC
     for value in dates_test:
         print value
-        print ""
-        print ""
-        if len(oom_date_count) >= 3:
-            print bcolors.HEADER + bcolors.UNDERLINE + "Note:" + \
-                bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + \
-                bcolors.ENDC + "of the" + bcolors.RED + " %s occurrence" % \
-                (len(oom_date_count)) + bcolors.ENDC
-            print "Showing the " + bcolors.GREEN + "1st" + bcolors.ENDC + \
-                ", " + bcolors.GREEN + "2nd" + bcolors.ENDC + " and" + \
-                bcolors.GREEN + " last" + bcolors.ENDC
+    print ""
+    if len(oom_date_count) >= 3:
+        print bcolors.HEADER + bcolors.UNDERLINE + "Note:" + \
+            bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " + \
+            bcolors.ENDC + "of the" + bcolors.RED + " %s occurrence" % \
+            (len(oom_date_count)) + bcolors.ENDC
+        print "Showing the " + bcolors.GREEN + "1st" + bcolors.ENDC + \
+            ", " + bcolors.GREEN + "2nd" + bcolors.ENDC + " and" + \
+            bcolors.GREEN + " last" + bcolors.ENDC
 
 
 def OOM_record(LOG_FILE):
@@ -533,11 +592,15 @@ def OOM_record(LOG_FILE):
             record = False
             counter += 1
         elif record:
-            line = strip_line(line)
-            # service rss calulation initiation:
-            list_of_values[counter].append(save_values(line, column_number))
-            rss_value = strip_rss(line, column_number)
-            total_rss[counter].append(rss_value)  # calc total of all processes
+            try:
+                line = strip_line(line)
+                list_of_values[counter].append(save_values(
+                    line, column_number))  # service rss calulation initiation
+                rss_value = strip_rss(line, column_number)
+                # calculate total value of all processes:
+                total_rss[counter].append(rss_value)
+            except:
+                pass
         elif record_oom_true_false and killed:
             killed = killed.group(1)
             killed = strip_line(killed)
@@ -549,6 +612,7 @@ def OOM_record(LOG_FILE):
     check_if_incident(
         counter, oom_date_count, total_rss, killed_services,
         service_value_list, LOG_FILE, all_killed_services)
+    check_dmesg(len(oom_date_count))
 
 
 def file_size(file_path):
@@ -659,7 +723,9 @@ def main():
         selected_option = sys.argv[1:]
         selected_option = selected_option[0]
         if selected_option == '-q' or selected_option == '--quick':
-            quick_check_all_logs(find_all_logs(get_log_file()))
+            option = 'quick'
+            quick_check_all_logs(find_all_logs(get_log_file(), option))
+            print ""
     elif len(sys.argv) == 3:
         selected_option = sys.argv[1:]
         selected_option = selected_option[0]
