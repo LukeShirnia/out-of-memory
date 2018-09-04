@@ -163,10 +163,6 @@ def check_if_incident(
         p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
         date_format.append(p)
 
-    if counter > 4:
-        show_full_dates = 4
-    else:
-        show_full_dates = counter
     get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services)
     counter = counter - 1
 
@@ -209,7 +205,7 @@ def find_all_logs(OOM_LOG, option):
     split_log_file_dir = os.path.dirname(OOM_LOG)
     split_log_file_name = os.path.basename(OOM_LOG)
     split_log_file_name = split_log_file_name + '*'
-    for root, dirs, files in os.walk(split_log_file_dir):
+    for root, _, files in os.walk(split_log_file_dir):
         for name in files:
             if fnmatch.fnmatch(name, split_log_file_name):
                 result.append(os.path.join(root, name))
@@ -543,13 +539,11 @@ def OOM_record(LOG_FILE):
     place
     '''
     oom_date_count = []
-    running_service = []
     list_of_values = {}
     total_rss = {}
     killed_services = {}
     unique_services = {}
     service_value_list = {}
-    total_service_list = []
     all_killed_services = []
     try:
         normal_file = (False if LOG_FILE.endswith('.gz') else True)
@@ -559,12 +553,10 @@ def OOM_record(LOG_FILE):
     record = False
     record_oom_true_false = False
     counter = 1
-    oom_line_length = 0
     for line in inLogFile:
         killed = re.search("Killed process (.*) total", line)
         if "[ pid ]   uid  tgid total_vm      rss" in line.strip() \
                 and "kernel" in line.lower():
-            oom_line_length = len(line.strip())
             total_rss[counter] = []
             killed_services[counter] = []
             unique_services[counter] = []
@@ -640,7 +632,6 @@ def get_log_file():
     os_check_value = os_check()
     if len(argv) == 1 or len(argv) == 2:
         if os_check_value.lower() in CentOS_RedHat_Distro:
-            system_rss = system_resources()
             OOM_LOG = "/var/log/messages"
             size_of_file = file_size(OOM_LOG)
             if size_of_file < 250:
@@ -667,7 +658,6 @@ def get_log_file():
         script, option, OOM_LOG = argv
         size_of_file = file_size(OOM_LOG)
         if os_check_value.lower() in CentOS_RedHat_Distro:
-            system_rss = system_resources()
             if size_of_file < 250:  # check file size is below 250 MB
                 return OOM_LOG
             else:
