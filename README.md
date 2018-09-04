@@ -1,4 +1,7 @@
 # Out-Of-Memory Investigation .py
+  
+  
+Python 2.5.x - 3.6.x compatibility  
 
 
 The following python script can be used to calculate the estimated RSS (RAM) value of each service at the time a kernel invoked OOM killer.
