@@ -644,6 +644,7 @@ def get_log_file():
                     chunks (such as dates)")
         elif os_check_value.lower() in Ubuntu_Debian_Distro:
             OOM_LOG = "/var/log/syslog"
+            size_of_file = file_size(OOM_LOG)
             if size_of_file < 250:
                 return OOM_LOG
                 print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
