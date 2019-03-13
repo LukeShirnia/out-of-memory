@@ -66,6 +66,34 @@ def neat_oom_invoke():
     print("")
 
 
+def openfile(filename, normal_file):
+    '''
+    Check if input file is a compressed or regular file
+    '''
+    try:
+        if normal_file:
+            return open(filename, "r")
+        elif filename.endswith('.gz'):
+                return gzip.open(filename, "r")
+        else:
+            return open(filename, "r")
+    except IOError:
+        print("")
+        print("Does the file specified exist? {0}".format(filename))
+        print("Please check again")
+        print("")
+        sys.exit(1)
+
+
+def strip_rss(line, column_number):
+    '''
+    Obtain the RSS value of a service from the line
+    '''
+    line = line.split()
+    value = int(line[column_number-1])
+    return value
+
+
 def os_check():
     '''
     Make sure this is being run on a Linux device first
@@ -89,15 +117,6 @@ def system_resources():
                 memory_value = int(lines.split()[1])
                 system_memory = int(memory_value / 1024)
                 return system_memory
-
-
-def strip_rss(line, column_number):
-    '''
-    Obtain the RSS value of a service from the line
-    '''
-    line = line.split()
-    value = int(line[column_number-1])
-    return value
 
 
 def add_rss(total_rss):
@@ -430,25 +449,6 @@ def add_rss_for_processes(unique, list_of_values):
     return total_service_usage
 
 
-def openfile(filename, normal_file):
-    '''
-    Check if input file is a compressed or regular file
-    '''
-    try:
-        if normal_file:
-            return open(filename, "r")
-        elif filename.endswith('.gz'):
-                return gzip.open(filename, "r")
-        else:
-            return open(filename, "r")
-    except IOError:
-        print("")
-        print("Does the file specified exist? {0}".format(filename))
-        print("Please check again")
-        print("")
-        sys.exit(1)
-
-
 def find_rss_column(line):
     '''
     This check finds the correct column for RSS
@@ -565,7 +565,7 @@ def OOM_record(LOG_FILE):
             record_oom_true_false = False
             oom_date_count.append(date_time(line))
             line = strip_line(line)
-            column_number = find_rss_column(line.split())
+            column_number = line.split().index("rss") + 1
         elif "kernel" not in line.lower() and record:  # Skips log entries
             # that may be interfering with oom output from kernel
             pass
@@ -704,40 +704,32 @@ def main():
     parser = OptionParser(usage='usage: %prog [option]')
     parser.add_option(
         "-q", "--quick",
-        action="store_false",
         dest="quick",
-        default=True,
+        action="store_true",
         help="Quick Search all rotated system files")
     parser.add_option(
         "-f", "--file",
-        action="store",
         dest="file",
+        action="store_true",
         metavar="File",
         help="Specify a log to check")
 
     (options, args) = parser.parse_args()
-    if len(sys.argv) == 2:
-        selected_option = sys.argv[1:]
-        selected_option = selected_option[0]
-        if selected_option == '-q' or selected_option == '--quick':
-            option = 'quick'
-            quick_check_all_logs(find_all_logs(get_log_file(), option))
+    if options.quick:
+            quick_check_all_logs(find_all_logs(get_log_file(), "quick"))
             print("")
-    elif len(sys.argv) == 3:
-        selected_option = sys.argv[1:]
-        selected_option = selected_option[0]
-        if selected_option == '-f' or selected_option == '--file':
-            try:
-                catch_log_exceptions(get_log_file())
-            except(EOFError, KeyboardInterrupt):
-                print("")
-                sys.exit(0)
-    else:
+            return sys.exit(0)
+    elif options.file:
         try:
-            catch_log_exceptions(get_log_file())
+            return catch_log_exceptions(get_log_file())
         except(EOFError, KeyboardInterrupt):
-            print
-            sys.exit(0)
+            print("")
+            return sys.exit(1)
+    try:
+        return catch_log_exceptions(get_log_file())
+    except(EOFError, KeyboardInterrupt):
+        print
+        return sys.exit(1)
 
 
 if __name__ == '__main__':
