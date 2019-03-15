@@ -10,6 +10,7 @@ import sys
 import platform
 import re
 import gzip
+from cStringIO import StringIO
 import datetime
 import operator
 import os
@@ -116,7 +117,7 @@ def strip_line(line):
 
 
 # @profile
-class getlogdata():
+class GetLogData():
 
     def __init__(self):
         self._info = ''
@@ -124,7 +125,9 @@ class getlogdata():
         self._size = 0
 
     def reversefile(self, buf_size=8192):
-        """ a generator that returns the lines of a file in reverse order """
+        """
+        a generator that returns the lines of a file in reverse order
+        """
         with openfile(self._logfile) as fh:
             segment = None
             offset = 0
@@ -155,6 +158,25 @@ class getlogdata():
             if segment is not None:
                 yield segment
 
+    def lastlistgzip(self):
+        """
+        Reads file in chunks to reduce memory footprint
+        saves last 2 chunks, combines and finds the last line
+        """
+        in_file = gzip.open(self._logfile, 'r')
+        chunks = ['', '']
+        while 1:
+            chunk = in_file.read(512*512)
+            if not chunk:
+                break
+            del chunks[0]
+            chunks.append(chunk)
+
+        data = StringIO(''.join(chunks))
+        for line in data:
+            pass
+        return line
+
     def size_of_file(self):
         """
         This function will return the file size of the script.
@@ -181,6 +203,8 @@ class getlogdata():
             return line.split()[0:3]
 
     def enddate(self):
+        if self._logfile.endswith('.gz'):
+            return self.lastlistgzip().split()[0:3]
         for line in self.reversefile():
             return line.split()[0:3]
 
@@ -237,7 +261,7 @@ def check_if_incident(
         p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
         date_format.append(p)
 
-    get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services)
+    showlogoverview(LOG_FILE, oom_date_count, all_killed_services)
     counter = counter - 1
 
     if counter == 1:  # if only 1 instance of oom then print all
@@ -410,11 +434,11 @@ def _compare_dmesg(dmesg_count, oom_date_count):
 
 
 # @profile
-def get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
+def showlogoverview(LOG_FILE, oom_date_count, all_killed_services):
     '''
     Get the start and end date of the current log file
     '''
-    gld = getlogdata()
+    gld = GetLogData()
     try:
         first_line, last_line = gld.information(LOG_FILE)
     except IndexError:
