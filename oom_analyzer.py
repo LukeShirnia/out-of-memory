@@ -116,7 +116,6 @@ def strip_line(line):
     return line
 
 
-# @profile
 class GetLogData():
 
     def __init__(self):
@@ -195,6 +194,14 @@ class GetLogData():
             print("Please consider splitting the file into smaller"
                   "chunks (such as dates)")
             sys.exit(1)
+        elif self._size == 0:
+            print
+            print(bcolors.UNDERLINE + "Log Information" + bcolors.ENDC)
+            print(bcolors.GREEN +
+           "Log File  : " + bcolors.YELLOW + " %s " % (self._logfile) + bcolors.ENDC)
+            print(bcolors.RED + "File appears to be empty" + bcolors.ENDC.format(self._logfile))
+            print
+            sys.exit(1)
         return True
 
     def startdate(self):
@@ -208,6 +215,7 @@ class GetLogData():
         for line in self.reversefile():
             return line.split()[0:3]
 
+    # @profile
     def information(self, logfile):
         self._logfile = logfile
         if self.checkfilesize():
@@ -294,14 +302,14 @@ def check_if_incident(
 
 
 # @profile
-def find_all_logs(OOM_LOG, option=None):
+def find_all_logs(oom_log, option=None):
     '''
     This function finds all log files in the directory of
     default log file (or specified log file)
     '''
     result = []
-    split_log_file_dir = os.path.dirname(OOM_LOG)
-    split_log_file_name = os.path.basename(OOM_LOG)
+    split_log_file_dir = os.path.dirname(oom_log)
+    split_log_file_name = os.path.basename(oom_log)
     split_log_file_name = split_log_file_name + '*'
     for root, _, files in os.walk(split_log_file_dir):
         for name in files:
@@ -312,8 +320,8 @@ def find_all_logs(OOM_LOG, option=None):
         print(bcolors.YELLOW +
               "Checking other logs, select an option:" + bcolors.ENDC)
         if option == 'exclude':
-            while OOM_LOG in result:
-                result.remove(OOM_LOG)
+            while oom_log in result:
+                result.remove(oom_log)
     return result
 
 
@@ -673,16 +681,16 @@ def get_log_file(logf=None):
         platform.dist()[0] if platform.linux_distribution() else None
     # If log file has been specificed by the user
     if logf:
-        OOM_LOG = logf
+        oom_log = logf
     # Obtaining system default log files if no log file specified
     elif not logf and os_check_value.lower() in CentOS_RedHat_Distro:
-        OOM_LOG = "/var/log/messages"
+        oom_log = "/var/log/messages"
     elif not logf and os_check_value.lower() in Ubuntu_Debian_Distro:
-        OOM_LOG = "/var/log/syslog"
+        oom_log = "/var/log/syslog"
     else:
         print("Unsupported OS")
         sys.exit(1)
-    return OOM_LOG
+    return oom_log
 
 
 def catch_log_exceptions(oom_log):
