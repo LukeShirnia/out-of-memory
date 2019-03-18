@@ -187,7 +187,7 @@ OOMOUTPUT = textwrap.dedent("""\
     Service: rackspace-mo      (1)      5 MB 
     Service: rsyslogd          (1)      4 MB 
 
-    """)
+""")
 
 
 def test_output(fs, monkeypatch, capsys):
