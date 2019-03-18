@@ -99,12 +99,12 @@ def system_resources():
     '''
     Get the RAM info from /proc
     '''
-    with open("/proc/meminfo", "r") as meminfo:
-        for lines in meminfo:
-            if "MemTotal" in lines.strip():
-                memory_value = int(lines.split()[1])
-                system_memory = int(memory_value / 1024)
-                return system_memory
+    meminfo = openfile("/proc/meminfo")
+    for lines in meminfo:
+        if "MemTotal" in lines.strip():
+            memory_value = int(lines.split()[1])
+            system_memory = int(memory_value / 1024)
+            return system_memory
 
 
 # @profile
@@ -119,7 +119,7 @@ def strip_line(line):
     return line
 
 
-class GetLogData():
+class GetLogData(object):
 
     def __init__(self):
         self._info = ''
@@ -196,15 +196,18 @@ class GetLogData():
             print("!!! File is too LARGE !!!")
             print("Please consider splitting the file into smaller"
                   "chunks (such as dates)")
-            sys.exit(1)
+            return sys.exit(1)
         elif self._size == 0:
             print
             print(bcolors.UNDERLINE + "Log Information" + bcolors.ENDC)
             print(bcolors.GREEN +
-           "Log File  : " + bcolors.YELLOW + " %s " % (self._logfile) + bcolors.ENDC)
-            print(bcolors.RED + "File appears to be empty" + bcolors.ENDC.format(self._logfile))
+                  "Log File  : " + bcolors.YELLOW + " %s " % (
+                                            self._logfile) + bcolors.ENDC)
+            print(bcolors.RED +
+                  "File appears to be empty" +
+                  bcolors.ENDC.format(self._logfile))
             print
-            sys.exit(1)
+            return sys.exit(1)
         return True
 
     def startdate(self):
@@ -225,6 +228,7 @@ class GetLogData():
             enddate = self.enddate()
             startdate = self.startdate()
             return (startdate, enddate)
+        return
 
 
 # @profile
@@ -679,7 +683,6 @@ def get_log_file(logf=None):
     '''
     Checks OS distribution and accepts arguments
     '''
-    print_header()
     os_check_value = \
         platform.dist()[0] if platform.linux_distribution() else None
     # If log file has been specificed by the user
@@ -729,6 +732,7 @@ def main():
         help="Specify a log to check")
 
     (options, args) = parser.parse_args()
+    print_header()
     if options.quick:
         quick_check_all_logs(find_all_logs(get_log_file()))
         print("")
