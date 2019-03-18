@@ -10,7 +10,10 @@ import sys
 import platform
 import re
 import gzip
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 import datetime
 import operator
 import os
@@ -79,7 +82,7 @@ def openfile(filename):
     '''
     try:
         if filename.endswith('.gz'):
-            return gzip.open(filename, "r")
+            return gzip.open(filename, "rt")
         return open(filename, "r")
     except AttributeError:
         return open(filename, "r")
@@ -162,7 +165,7 @@ class GetLogData():
         Reads file in chunks to reduce memory footprint
         saves last 2 chunks, combines and finds the last line
         """
-        in_file = gzip.open(self._logfile, 'r')
+        in_file = openfile(self._logfile)
         chunks = ['', '']
         while 1:
             chunk = in_file.read(512*512)
