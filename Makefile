@@ -1,10 +1,14 @@
 export TZ=Europe/London
 
-test tests: unittests
+test tests: unittests pycodestyle
 
 unittests:
 	@PYTHONPATH=. pytest --cov=oom_analyzer --cov-report xml:cobertura.xml --cov-report term-missing
 
+pycodestyle:
+	@pycodestyle oom_analyzer.py
+
 clean:
 	find . -name \*.pyc -delete
-	rm -rf __pycache__ .cache .coverage
+	rm -rf __pycache__ .cache .coverage .pytest_cache
+	rm -rf tests/__pycache__ tests/.cache tests/.coverage tests/.pytest_cache

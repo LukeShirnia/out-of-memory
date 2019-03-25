@@ -123,7 +123,6 @@ class GetLogData(object):
         self._logfile = ''
         self._size = 0
 
-
     def lastlistgzip(self):
         """
         Reads file in chunks to reduce memory footprint
@@ -143,7 +142,6 @@ class GetLogData(object):
             pass
         return line
 
-
     def size_of_file(self):
         """
         This function will return the file size of the script.
@@ -153,7 +151,6 @@ class GetLogData(object):
         if os.path.isfile(self._logfile):
             file_info = os.stat(self._logfile)
             return ((float(file_info.st_size) / 1024) / 1024)
-
 
     def checkfilesize(self):
         self._size = self.size_of_file()
@@ -176,16 +173,13 @@ class GetLogData(object):
             return sys.exit(1)
         return True
 
-
     def startdate(self):
         lf = openfile(self._logfile)
         for line in lf:
             return line.split()[0:3]
 
-
     def enddate(self):
         return self.lastlistgzip().split()[0:3]
-
 
     def information(self, logfile):
         self._logfile = logfile
