@@ -45,7 +45,6 @@ CentOS_RedHat_Distro = \
 Ubuntu_Debian_Distro = ['ubuntu', 'debian']
 
 
-# @profile
 def print_header():
     '''
     Disclaimer and Script Header
@@ -55,17 +54,16 @@ def print_header():
     print("     |     |     |     |")
     print("     |  |  |  |  | | | |")
     print("     |_____|_____|_|_|_|")
-    print("     Out Of Memory Analyser")
+    print("    Out Of Memory Analyzer")
     print("")
     print(bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC)
     print(bcolors.RED +
           "If system OOMs too viciously, there may be nothing logged!")
-    print("Do NOT take this script as FACT, investigate further" +
+    print("Do NOT take this script as FACT, investigate further." +
           bcolors.ENDC)
     print(bcolors.CYAN + "-" * 40 + bcolors.ENDC)
 
 
-# @profile
 def neat_oom_invoke():
     '''
     Print WARNING if there is an OOM issue
@@ -75,7 +73,6 @@ def neat_oom_invoke():
     print("")
 
 
-# @profile
 def openfile(filename):
     '''
     Check if input file is a compressed or regular file
@@ -94,7 +91,6 @@ def openfile(filename):
         sys.exit(1)
 
 
-# @profile
 def system_resources():
     '''
     Get the RAM info from /proc
@@ -107,7 +103,6 @@ def system_resources():
             return system_memory
 
 
-# @profile
 def strip_line(line):
     '''
     Stripping all non required characters from the line so not to
@@ -126,39 +121,6 @@ class GetLogData(object):
         self._logfile = ''
         self._size = 0
 
-    def reversefile(self, buf_size=8192):
-        """
-        a generator that returns the lines of a file in reverse order
-        """
-        with openfile(self._logfile) as fh:
-            segment = None
-            offset = 0
-            fh.seek(0, os.SEEK_END)
-            file_size = remaining_size = fh.tell()
-            while remaining_size > 0:
-                offset = min(file_size, offset + buf_size)
-                fh.seek(file_size - offset)
-                buffer = fh.read(min(remaining_size, buf_size))
-                remaining_size -= buf_size
-                lines = buffer.split('\n')
-                # the first line of the buffer is probably not a complete line
-                # so we'll save it and append it to the last line of the next
-                # buffer we read
-                if segment is not None:
-                    # if the previous chunk starts right from the beginning
-                    # of line do not connect the segment to the last line of
-                    # new chunk instead, yield the segment first
-                    if buffer[-1] is not '\n':
-                        lines[-1] += segment
-                    else:
-                        yield segment
-                segment = lines[0]
-                for index in range(len(lines) - 1, 0, -1):
-                    if len(lines[index]):
-                        yield lines[index]
-            # Don't yield None if the file was empty
-            if segment is not None:
-                yield segment
 
     def lastlistgzip(self):
         """
@@ -179,6 +141,7 @@ class GetLogData(object):
             pass
         return line
 
+
     def size_of_file(self):
         """
         This function will return the file size of the script.
@@ -187,7 +150,8 @@ class GetLogData(object):
         """
         if os.path.isfile(self._logfile):
             file_info = os.stat(self._logfile)
-            return int((file_info.st_size) / 1024) / 1024
+            return ((float(file_info.st_size) / 1024) / 1024)
+
 
     def checkfilesize(self):
         self._size = self.size_of_file()
@@ -210,18 +174,17 @@ class GetLogData(object):
             return sys.exit(1)
         return True
 
+
     def startdate(self):
         lf = openfile(self._logfile)
         for line in lf:
             return line.split()[0:3]
 
-    def enddate(self):
-        if self._logfile.endswith('.gz'):
-            return self.lastlistgzip().split()[0:3]
-        for line in self.reversefile():
-            return line.split()[0:3]
 
-    # @profile
+    def enddate(self):
+        return self.lastlistgzip().split()[0:3]
+
+
     def information(self, logfile):
         self._logfile = logfile
         if self.checkfilesize():
@@ -231,7 +194,6 @@ class GetLogData(object):
         return
 
 
-# @profile
 def print_oom_output(
         i, date_format, system_resources, total_rss_per_incident,
         killed_services, service_value_list):
@@ -263,7 +225,6 @@ def print_oom_output(
     print("")
 
 
-# @profile
 def check_if_incident(
     counter, oom_date_count, total_rss_per_incident, killed_services,
         service_value_list, LOG_FILE, all_killed_services):
@@ -308,7 +269,6 @@ def check_if_incident(
         print("")
 
 
-# @profile
 def find_all_logs(oom_log, option=None):
     '''
     This function finds all log files in the directory of
@@ -332,7 +292,6 @@ def find_all_logs(oom_log, option=None):
     return result
 
 
-# @profile
 def quick_check_all_logs(results):
     '''
     Quickly check all log files for oom incidents
@@ -360,7 +319,6 @@ def quick_check_all_logs(results):
     select_next_logfile(next_logs_to_search)
 
 
-# @profile
 def select_next_logfile(log_file):
     '''
     This function is for the user to select the next log file they wish to
@@ -396,7 +354,6 @@ def select_next_logfile(log_file):
                     print("Please select an number")
 
 
-# @profile
 def _dmesg():
     '''
     Open a subprocess to read the output of the dmesg command line-by-line
@@ -410,7 +367,6 @@ def _dmesg():
     devnull.close()
 
 
-# @profile
 def check_dmesg(oom_date_count):
     '''
     Read each line and search for oom string
@@ -424,7 +380,6 @@ def check_dmesg(oom_date_count):
     _compare_dmesg(len(dmesg_count), oom_date_count)
 
 
-# @profile
 def _compare_dmesg(dmesg_count, oom_date_count):
     '''
     Compare dmesg to syslog oom report
@@ -448,7 +403,6 @@ def _compare_dmesg(dmesg_count, oom_date_count):
         print("")
 
 
-# @profile
 def showlogoverview(LOG_FILE, oom_date_count, all_killed_services):
     '''
     Get the start and end date of the current log file
@@ -495,7 +449,6 @@ def showlogoverview(LOG_FILE, oom_date_count, all_killed_services):
     print("")
 
 
-# @profile
 def save_values(line, column_number):
     '''
     This function processes each line (when record = True)
@@ -508,7 +461,6 @@ def save_values(line, column_number):
         return string
 
 
-# @profile
 def add_rss_for_processes(unique, list_of_values):
     '''
     Adding the RSS value of each service
@@ -533,7 +485,6 @@ def add_rss_for_processes(unique, list_of_values):
     return total_service_usage
 
 
-# @profile
 def date_time(line):
     '''
     Creates a date object from an extracted string
@@ -546,7 +497,6 @@ def date_time(line):
     return date_check
 
 
-# @profile
 def strip_time(date_time):
     '''
     Used to summarise the hour OOM's occurred (excludes the mins and seconds)
@@ -555,7 +505,6 @@ def strip_time(date_time):
         hours=1, minutes=-date_time.minute, seconds=-date_time.second)
 
 
-# @profile
 def date_time_counter_split(dates_sorted):
     '''
     Split the date and OOM count ('May 12': 1) into 2 strings and
@@ -570,7 +519,6 @@ def date_time_counter_split(dates_sorted):
     return sorted_dates
 
 
-# @profile
 def date_check(oom_date_count):
     '''
     The function is used to produce a list of dates +inc hour of every oom
@@ -608,7 +556,6 @@ def date_check(oom_date_count):
               bcolors.GREEN + " last" + bcolors.ENDC)
 
 
-# @profile
 def OOM_record(LOG_FILE):
     '''
     Takes 1 argument - the log file to check
@@ -678,7 +625,6 @@ def OOM_record(LOG_FILE):
     check_dmesg(len(oom_date_count))
 
 
-# @profile
 def get_log_file(logf=None):
     '''
     Checks OS distribution and accepts arguments
@@ -703,17 +649,16 @@ def catch_log_exceptions(oom_log):
     '''
     Catch any errors with the analysing of the log file
     '''
-    # try:
-    OOM_record(oom_log)
-    # except Exception as error:
-    #     print("")
-    #     print(bcolors.RED + "Error:" + bcolors.ENDC)
-    #     print(error)
-    #     print("")
-    #     print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
+    try:
+        OOM_record(oom_log)
+    except Exception as error:
+        print("")
+        print(bcolors.RED + "Error:" + bcolors.ENDC)
+        print(error)
+        print("")
+        print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
 
 
-# @profile
 def main():
     '''
     Usage and help overview - Option parsing
