@@ -8,6 +8,9 @@ unittests:
 pycodestyle:
 	@pycodestyle oom_analyzer.py
 
+pylint:
+	@pylint --rcfile=.pylintrc oom_analyzer.py -j 4 -f parseable -r n 
+
 clean:
 	find . -name \*.pyc -delete
 	rm -rf __pycache__ .cache .coverage .pytest_cache
