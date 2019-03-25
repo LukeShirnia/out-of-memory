@@ -11,6 +11,8 @@ scriptheader = textwrap.dedent("""\
          |_____|_____|_|_|_|
         Out Of Memory Analyzer
     
+    Copyright 2019 LukeShirnia
+    
     \x1b[91m\x1b[4mDisclaimer:\x1b[0m
     \x1b[91mIf system OOMs too viciously, there may be nothing logged!
     Do NOT take this script as FACT, investigate further.\x1b[0m

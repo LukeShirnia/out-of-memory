@@ -56,6 +56,8 @@ def print_header():
     print("     |_____|_____|_|_|_|")
     print("    Out Of Memory Analyzer")
     print("")
+    print("Copyright 2019 LukeShirnia")
+    print("")
     print(bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC)
     print(bcolors.RED +
           "If system OOMs too viciously, there may be nothing logged!")
