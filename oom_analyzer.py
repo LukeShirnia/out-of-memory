@@ -128,10 +128,10 @@ class GetLogData(object):
     Obtain information from the log file selected
     """
 
-    def __init__(self):
-        self._info = ''
-        self._logfile = ''
+    def __init__(self, logfile):
+        self._logfile = logfile
         self._size = 0
+        self._info = ''
 
     def lastlistgzip(self):
         """
@@ -170,11 +170,17 @@ class GetLogData(object):
         RAM issues.
         """
         self._size = self.size_of_file()
-        if self._size > 250:
+        if self._size >= 300:
             print("")
             print("!!! File is too LARGE !!!")
+            print("Size: {0} MB".format(int(self._size)))
+            print()
+            print("Investigating this {0}MB log file could cause memory issues"
+                  " on small servers"
+                  .format(int(self._size)))
             print("Please consider splitting the file into smaller"
                   "chunks (such as dates)")
+            print()
             sys.exit(1)
         elif self._size == 0:
             print()
@@ -204,11 +210,10 @@ class GetLogData(object):
         """
         return self.lastlistgzip().split()[0:3]
 
-    def information(self, logfile):
+    def information(self):
         """
         Gather and return log file start and end date
         """
-        self._logfile = logfile
         self.checkfilesize()
         enddate = self.enddate()
         startdate = self.startdate()
@@ -427,9 +432,9 @@ def showlogoverview(oom_lf, oom_date_count, all_killed_services):
     '''
     Get the start and end date of the current log file
     '''
-    gld = GetLogData()
+    gld = GetLogData(oom_lf)
     try:
-        first_line, last_line = gld.information(oom_lf)
+        first_line, last_line = gld.information()
     except IndexError:
         print("")
         print("File appears to be corrupt or empty")

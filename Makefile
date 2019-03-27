@@ -9,7 +9,7 @@ pycodestyle:
 	@pycodestyle oom_analyzer.py
 
 pylint:
-	@pylint --rcfile=.pylintrc oom_analyzer.py -j 4 -f parseable -r n 
+	@pylint --rcfile=pylint.cfg oom_analyzer.py -j 4 -f parseable -r n 
 
 clean:
 	find . -name \*.pyc -delete

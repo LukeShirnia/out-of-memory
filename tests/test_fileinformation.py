@@ -103,7 +103,11 @@ EMPTYFILERESPONSE = textwrap.dedent("""\
 LARGEFILERESPONSE = textwrap.dedent("""\
 
     !!! File is too LARGE !!!
+    Size: 300 MB
+
+    Investigating this 300MB log file could cause memory issues on small servers
     Please consider splitting the file into smallerchunks (such as dates)
+
 """)
 
 
@@ -133,13 +137,13 @@ def test_empty_file(fs, monkeypatch, capsys):
 def test_file_too_large(fs, monkeypatch, capsys):
     _lf = '/var/log/messages'
     monkeypatch.setattr(oom_analyzer, 'check_dmesg', lambda x: True)
-    monkeypatch.setattr(oom_analyzer.GetLogData, 'size_of_file', lambda x: 251)
+    monkeypatch.setattr(oom_analyzer.GetLogData, 'size_of_file', lambda x: 300.0)
     fs.CreateFile(_lf, contents=FILECONTENTS, st_size=251)
     fs.CreateFile('/proc/meminfo', contents=MEMINFO)
 
-    o = oom_analyzer.GetLogData()
+    o = oom_analyzer.GetLogData(_lf)
     with pytest.raises(SystemExit) as ex:
-        o.information(_lf)
+        o.information()
         assert ex.code == 1
 
     out, err = capsys.readouterr()
