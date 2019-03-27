@@ -11,7 +11,6 @@ It will calculate:
 - What services were killed
 - And the top RAM consumers at the time of the incident
 """
-
 from __future__ import print_function
 import sys
 import re
@@ -20,14 +19,17 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
+import platform
 import datetime
 import os
 import fnmatch
 from optparse import OptionParser
 import subprocess
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-class Colours:
+class Colours(object):
     '''
     Class used for colour formatting
     '''
@@ -203,15 +205,18 @@ class GetLogData(object):
         return self.lastlistgzip().split()[0:3]
 
     def information(self, logfile):
+        """
+        Gather and return log file start and end date
+        """
         self._logfile = logfile
-        if self.checkfilesize():
-            enddate = self.enddate()
-            startdate = self.startdate()
-            return (startdate, enddate)
+        self.checkfilesize()
+        enddate = self.enddate()
+        startdate = self.startdate()
+        return (startdate, enddate)
 
 
 def print_oom_output(
-        i, date_format, system_resources, total_rss_per_incident,
+        i, date_format, total_rss_per_incident,
         killed_services, service_value_list):
     '''
     Print the Output of an OOM incident (Inc TOP 5 RAM consumers)
@@ -245,7 +250,7 @@ def check_if_incident(
     counter, oom_date_count, total_rss_per_incident, killed_services,
         service_value_list, oom_lf, all_killed_services):
     '''
-    Check if OOM incident occurred. ADD FUNCTION TO PROMPT FOR OTHER LOG FILES
+    Check if OOM incident occurred.
     '''
     date_format = []
 
@@ -260,19 +265,19 @@ def check_if_incident(
         date_check(oom_date_count)
         i = 1
         print_oom_output(
-            i, date_format, system_resources, total_rss_per_incident,
+            i, date_format, total_rss_per_incident,
             killed_services, service_value_list)
     elif counter == 2:  # if only 3 instance of oom then print all
         date_check(oom_date_count)
         for i in (1, 2):
             print_oom_output(
-                i, date_format, system_resources, total_rss_per_incident,
+                i, date_format, total_rss_per_incident,
                 killed_services, service_value_list)
     elif counter >= 3:  # if more 3 or more oom instances, print 1st, 2nd, last
         date_check(oom_date_count)
         for i in (1, 2, counter - 1):
             print_oom_output(
-                i, date_format, system_resources, total_rss_per_incident,
+                i, date_format, total_rss_per_incident,
                 killed_services, service_value_list)
     else:
         print("-" * 40)
@@ -345,8 +350,8 @@ def select_next_logfile(log_file):
         print("")
         incorrect = True
         while incorrect:
-            Not_Integer = True
-            while Not_Integer:
+            not_integer = True
+            while not_integer:
                 print("Which file should we check next?")
                 tty = open('/dev/tty')
                 print("Select an option number between" + Colours.GREEN +
@@ -362,12 +367,12 @@ def select_next_logfile(log_file):
                         new_log_file = log_file[option_answer]
                         oom_record(new_log_file)
                         incorrect = False
-                        Not_Integer = False
+                        not_integer = False
                     else:
                         print("Option number out of range, try again")
                         print("")
                 else:
-                    print("Please select an number")
+                    print("Please select a number")
 
 
 def _dmesg():
@@ -388,8 +393,7 @@ def check_dmesg(oom_date_count):
     Read each line and search for oom string
     '''
     dmesg_count = []
-    check_dmesg = _dmesg()
-    for dmesg_line in check_dmesg:
+    for dmesg_line in _dmesg():
         if b"[ pid ]   uid  tgid total_vm      rss" in dmesg_line.lower():
             dmesg_count.append(dmesg_line.strip())
     dmesg_count = list(filter(None, dmesg_count))
@@ -450,15 +454,17 @@ def showlogoverview(oom_lf, oom_date_count, all_killed_services):
               Colours.RED + " %s " % (len(oom_date_count) - 1) + Colours.ENDC)
     elif len(oom_date_count) <= 4 and len(oom_date_count) > 0:
         neat_oom_invoke()
-        "Number of OOM occurrence in log file: %s " % (len(oom_date_count))
+        print("Number of OOM occurrence in log file: %s " % (
+            len(oom_date_count)))
     else:
-        "Number of OOM occurrence in log file: %s " % (len(oom_date_count))
+        print("Number of OOM occurrence in log file: %s " % (
+            len(oom_date_count)))
         print("")
     all_killed_services = dict(
         (i, all_killed_services.count(i)) for i in all_killed_services)
-    ServiceCount = sorted(
+    service_count = sorted(
         ((v, k) for k, v in all_killed_services.items()), reverse=True)
-    for i in ServiceCount:
+    for i in service_count:
         print("Service " + Colours.RED + "{0:12} ".format(i[1]) +
               Colours.ENDC + "Killed " + Colours.RED + "{0} ".format(i[0]) +
               Colours.ENDC + "time(s)")
@@ -470,11 +476,9 @@ def save_values(line, column_number):
     This function processes each line (when record = True)
     and saves the rss value and process name .eg (51200, apache)
     '''
-    value = line.split()[-1:]
-    if len(value) == 1:
-        cols = line.split()
-        string = cols[column_number-1], cols[-1]
-        return string
+    cols = line.split()
+    string = cols[column_number-1], cols[-1]
+    return string
 
 
 def add_rss_for_processes(unique, list_of_values):
@@ -645,13 +649,9 @@ def get_log_file(logf=None):
     Checks OS distribution and accepts arguments
     '''
     # platform module is depricated in python 3.5+
-    try:
-        import distro as lnx
-    except ImportError:
-        import platform as lnx
-
     os_check_value = \
-        lnx.linux_distribution()[0] if lnx.linux_distribution() else None
+        platform.linux_distribution()[0] \
+        if platform.linux_distribution() else None
 
     # If log file has been specificed by the user
     if logf:

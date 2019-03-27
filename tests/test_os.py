@@ -19,7 +19,7 @@ UNSUPPORTEDERROR = textwrap.dedent("""\
 def test_os_logfile(monkeypatch, capsys, os, logfile):
     def return_value():
         return os
-    monkeypatch.setattr(oom_analyzer.platform, 'dist', return_value)
+    monkeypatch.setattr(oom_analyzer.platform, 'linux_distribution', return_value)
 
     assert oom_analyzer.get_log_file(logf=None) == logfile
 
@@ -27,7 +27,7 @@ def test_os_logfile(monkeypatch, capsys, os, logfile):
 def test_unsupported_os(monkeypatch, capsys):
     def return_value():
         return ('unknown', 'x.x', '')
-    monkeypatch.setattr(oom_analyzer.platform, 'dist', return_value)
+    monkeypatch.setattr(oom_analyzer.platform, 'linux_distribution', return_value)
 
     with pytest.raises(SystemExit) as ex:
         oom_analyzer.get_log_file(logf=None)

@@ -164,6 +164,7 @@ OOMOUTPUT = textwrap.dedent("""\
 
     \x1b[91m\x1b[1m######## OOM ISSUE ########\x1b[0m
 
+    Number of OOM occurrence in log file: 1 
     Service \x1b[91mhttpd        \x1b[0mKilled \x1b[91m1 \x1b[0mtime(s)
 
     \x1b[93m\x1b[4mKEY\x1b[0m\x1b[93m

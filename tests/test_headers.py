@@ -21,7 +21,7 @@ scriptheader = textwrap.dedent("""\
 
 
 def test_bcolors_header():
-    assert oom_analyzer.bcolors.HEADER == "\033[95m"
+    assert oom_analyzer.Colours.HEADER == "\033[95m"
 
 
 def test_header(capsys):

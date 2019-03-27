@@ -69,6 +69,7 @@ OOMOUTPUT = textwrap.dedent("""\
     \x1b[92mStart date: \x1b[0m\x1b[93m Jun, 29, 15:39:16 \x1b[0m
     \x1b[92mEnd Date  : \x1b[0m\x1b[93m Jun, 29, 15:39:16 \x1b[0m
     
+    Number of OOM occurrence in log file: 0 
     
     
     ----------------------------------------
