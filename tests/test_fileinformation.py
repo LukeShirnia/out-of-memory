@@ -121,7 +121,7 @@ NONEXISTENTFILEOUTPUT = textwrap.dedent("""\
 
 def test_empty_file(fs, monkeypatch, capsys):
     _lf = '/var/log/messages'
-    monkeypatch.setattr(oom_analyzer, 'check_dmesg', lambda x: True)
+    monkeypatch.setattr(oom_analyzer.DmesgInfo, 'check_dmesg', lambda x: True)
     fs.CreateFile('/var/log/messages', st_size=0)
     fs.CreateFile('/proc/meminfo', contents=MEMINFO)
 
@@ -136,7 +136,7 @@ def test_empty_file(fs, monkeypatch, capsys):
 
 def test_file_too_large(fs, monkeypatch, capsys):
     _lf = '/var/log/messages'
-    monkeypatch.setattr(oom_analyzer, 'check_dmesg', lambda x: True)
+    monkeypatch.setattr(oom_analyzer.DmesgInfo, 'check_dmesg', lambda x: True)
     monkeypatch.setattr(oom_analyzer.GetLogData, 'size_of_file', lambda x: 300.0)
     fs.CreateFile(_lf, contents=FILECONTENTS, st_size=251)
     fs.CreateFile('/proc/meminfo', contents=MEMINFO)
@@ -152,7 +152,7 @@ def test_file_too_large(fs, monkeypatch, capsys):
 
 def test_openfile(fs, monkeypatch, capsys):
     with pytest.raises(SystemExit) as ex:
-        oom_analyzer.openfile("/var/log/nonexistentfile")
+        oom_analyzer.get_log_file(logf="/var/log/nonexistentfile")
         assert ex.code == 1
 
     out, err = capsys.readouterr()

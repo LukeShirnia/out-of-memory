@@ -245,7 +245,7 @@ OOMOUTPUT = textwrap.dedent("""\
 def test_output(fs, monkeypatch, capsys):
     _lf = '/var/log/messages'
     monkeypatch.setattr(oom_analyzer.GetLogData, 'checkfilesize', lambda x: True)
-    monkeypatch.setattr(oom_analyzer, 'check_dmesg', lambda x: True)
+    monkeypatch.setattr(oom_analyzer.DmesgInfo, 'check_dmesg', lambda x: True)
     fs.CreateFile('/var/log/messages', contents=LOGFILE)
     fs.CreateFile('/proc/meminfo', contents=MEMINFO)
 

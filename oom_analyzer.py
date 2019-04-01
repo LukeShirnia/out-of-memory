@@ -50,7 +50,7 @@ SUPPORTED = {
     "UBUNTU_DEBIAN": ['ubuntu', 'debian']
 }
 
-
+# @profile
 def print_header():
     '''
     Disclaimer and Script Header
@@ -71,7 +71,7 @@ def print_header():
           Colours.ENDC)
     print(Colours.CYAN + "-" * 40 + Colours.ENDC)
 
-
+# @profile
 def neat_oom_invoke():
     '''
     Print WARNING if there is an OOM issue
@@ -80,7 +80,7 @@ def neat_oom_invoke():
           Colours.ENDC)
     print("")
 
-
+# @profile
 def openfile(filename):
     '''
     Check if input file is a compressed or regular file
@@ -91,14 +91,8 @@ def openfile(filename):
         return open(filename, "r")
     except AttributeError:
         return open(filename, "r")
-    except IOError:
-        print("")
-        print("Does the file specified exist? {0}".format(filename))
-        print("Please check again")
-        print("")
-        sys.exit(1)
 
-
+# @profile
 def system_resources():
     '''
     Get the RAM info from /proc
@@ -111,7 +105,7 @@ def system_resources():
             return system_memory
     return None
 
-
+# @profile
 def strip_line(line):
     '''
     Stripping all non required characters from the line so not to
@@ -132,7 +126,7 @@ class GetLogData(object):
         self._logfile = logfile
         self._size = 0
         self._info = ''
-
+    # @profile
     def lastlistgzip(self):
         """
         Reads file in chunks to reduce memory footprint
@@ -151,7 +145,7 @@ class GetLogData(object):
         for line in data:
             pass
         return line
-
+    # @profile
     def size_of_file(self):
         """
         This function will return the file size of the script.
@@ -162,7 +156,7 @@ class GetLogData(object):
             file_info = os.stat(self._logfile)
             return (float(file_info.st_size) / 1024) / 1024
         return 0
-
+    # @profile
     def checkfilesize(self):
         """
         Checking the size of the file isn't > 250MB
@@ -195,7 +189,7 @@ class GetLogData(object):
             sys.exit(1)
         else:
             return True
-
+    # @profile
     def startdate(self):
         """
         Gets the log file start date from the first line of the file
@@ -203,13 +197,13 @@ class GetLogData(object):
         f = openfile(self._logfile)
         for line in f:
             return line.split()[0:3]
-
+    # @profile
     def enddate(self):
         """
         Get the end date of log file from the last line of the file
         """
         return self.lastlistgzip().split()[0:3]
-
+    # @profile
     def information(self):
         """
         Gather and return log file start and end date
@@ -219,7 +213,7 @@ class GetLogData(object):
         startdate = self.startdate()
         return (startdate, enddate)
 
-
+# @profile
 def print_oom_output(
         i, date_format, total_rss_per_incident,
         killed_services, service_value_list):
@@ -250,7 +244,7 @@ def print_oom_output(
 
     print("")
 
-
+# @profile
 def check_if_incident(
     counter, oom_date_count, total_rss_per_incident, killed_services,
         service_value_list, oom_lf, all_killed_services):
@@ -291,11 +285,11 @@ def check_if_incident(
         print("-" * 40)
         print("")
         # print similar log files to check for an issue
-        quick_check_all_logs(find_all_logs(oom_lf, option='exclude'))
+        qc_all_logs(locate_all_logs(oom_lf, option='exclude'))
         print("")
 
-
-def find_all_logs(oom_log, option=None):
+# @profile
+def locate_all_logs(oom_log, option=None):
     '''
     This function finds all log files in the directory of
     default log file (or specified log file)
@@ -317,8 +311,8 @@ def find_all_logs(oom_log, option=None):
                 result.remove(oom_log)
     return result
 
-
-def quick_check_all_logs(results):
+# @profile
+def qc_all_logs(results):
     '''
     Quickly check all log files for oom incidents
     (used when --quick option is invoked)
@@ -344,7 +338,7 @@ def quick_check_all_logs(results):
                 i, total_occurences))
     select_next_logfile(next_logs_to_search)
 
-
+# @profile
 def select_next_logfile(log_file):
     '''
     This function is for the user to select the next log file they wish to
@@ -380,54 +374,64 @@ def select_next_logfile(log_file):
                     print("Please select a number")
 
 
-def _dmesg():
-    '''
-    Open a subprocess to read the output of the dmesg command line-by-line
-    '''
-    devnull = open(os.devnull, 'wb')
-    p = subprocess.Popen(
-        ("dmesg"), shell=True, stdout=subprocess.PIPE, stderr=devnull)
-    for line in p.stdout:
-        yield line
-    p.wait()
-    devnull.close()
+class DmesgInfo(object):
+    """
+    Obtain information from dmesg regarding oom issues
+    """
+    def __init__(self, oom_count):
+        self.oom_count = oom_count
+        self.dmesg_count = []
+
+    # @profile
+    def dmesg_output(self):
+        '''
+        Open a subprocess to read the output of the dmesg command line-by-line
+        '''
+        devnull = open(os.devnull, 'wb')
+        p = subprocess.Popen(
+            ("dmesg"), shell=True, stdout=subprocess.PIPE, stderr=devnull)
+        for line in p.stdout:
+            yield line
+        p.wait()
+        devnull.close()
+
+    # @profile
+    def compare_dmesg(self):
+        '''
+        Compare dmesg to syslog oom report
+        '''
+        if len(self.dmesg_count) > self.oom_count and self.oom_count == 0:
+            print("")
+            print(Colours.YELLOW +
+                  "Dmesg reporting errors but log files are empty...")
+            print("Log files appear to have been rotated" + Colours.ENDC)
+            print("")
+            print("dmesg incidents: ", len(self.dmesg_count))
+        elif len(self.dmesg_count) > self.oom_count:
+            print("")
+            print(Colours.YELLOW + "Note: " + Colours.ENDC + "More reported " +
+                  Colours.RED + "errors " + Colours.ENDC + "in dmesg " +
+                  Colours.PURPLE + "({0})".format(
+                    len(self.dmesg_count)) + Colours.ENDC +
+                  " than current log file " + Colours.PURPLE + "({0})".format(
+                   self.oom_count) + Colours.ENDC)
+            print("Run with " + Colours.GREEN + "--quick" + Colours.ENDC +
+                  " option to check available log files")
+            print("")
+
+    # @profile
+    def check_dmesg(self):
+        '''
+        Read each line and search for oom string
+        '''
+        for dmesg_line in self.dmesg_output():
+            if b"[ pid ]   uid  tgid total_vm      rss" in dmesg_line.lower():
+                self.dmesg_count.append(dmesg_line.strip())
+        self.dmesg_count = list(filter(None, self.dmesg_count))
+        self.compare_dmesg()
 
 
-def check_dmesg(oom_date_count):
-    '''
-    Read each line and search for oom string
-    '''
-    dmesg_count = []
-    for dmesg_line in _dmesg():
-        if b"[ pid ]   uid  tgid total_vm      rss" in dmesg_line.lower():
-            dmesg_count.append(dmesg_line.strip())
-    dmesg_count = list(filter(None, dmesg_count))
-    _compare_dmesg(len(dmesg_count), oom_date_count)
-
-
-def _compare_dmesg(dmesg_count, oom_date_count):
-    '''
-    Compare dmesg to syslog oom report
-    '''
-    if dmesg_count > oom_date_count and oom_date_count == 0:
-        print("")
-        print(Colours.YELLOW +
-              "Dmesg reporting errors but log files are empty...")
-        print("Log files appear to have been rotated" + Colours.ENDC)
-        print("")
-        print("dmesg incidents: ", dmesg_count)
-    elif dmesg_count > oom_date_count:
-        print("")
-        print(Colours.YELLOW + "Note: " + Colours.ENDC + "More reported " +
-              Colours.RED + "errors " + Colours.ENDC + "in dmesg " +
-              Colours.PURPLE + "({0})".format(dmesg_count) + Colours.ENDC +
-              " than current log file " + Colours.PURPLE + "({0})".format(
-               oom_date_count) + Colours.ENDC)
-        print("Run with " + Colours.GREEN + "--quick" + Colours.ENDC +
-              " option to check available log files")
-        print("")
-
-
+# @profile
 def showlogoverview(oom_lf, oom_date_count, all_killed_services):
     '''
     Get the start and end date of the current log file
@@ -475,7 +479,7 @@ def showlogoverview(oom_lf, oom_date_count, all_killed_services):
               Colours.ENDC + "time(s)")
     print("")
 
-
+# @profile
 def save_values(line, column_number):
     '''
     This function processes each line (when record = True)
@@ -485,7 +489,7 @@ def save_values(line, column_number):
     string = cols[column_number-1], cols[-1]
     return string
 
-
+# @profile
 def add_rss_for_processes(unique, list_of_values):
     '''
     Adding the RSS value of each service
@@ -509,7 +513,7 @@ def add_rss_for_processes(unique, list_of_values):
         total_service_usage.append(string)
     return total_service_usage
 
-
+# @profile
 def date_time(line):
     '''
     Creates a date object from an extracted string
@@ -520,7 +524,7 @@ def date_time(line):
         date_of_oom, "%b %d %H:%M:%S")
     return _date
 
-
+# @profile
 def strip_time(_dt):
     '''
     Used to summarise the hour OOM's occurred (excludes the mins and seconds)
@@ -528,7 +532,7 @@ def strip_time(_dt):
     return _dt + datetime.timedelta(
         hours=1, minutes=-_dt.minute, seconds=-_dt.second)
 
-
+# @profile
 def date_time_counter_split(dates_sorted):
     '''
     Split the date and OOM count ('May 12': 1) into 2 strings and
@@ -542,7 +546,7 @@ def date_time_counter_split(dates_sorted):
         sorted_dates.append(date + " " + str(occurences))
     return sorted_dates
 
-
+# @profile
 def date_check(oom_date_count):
     '''
     The function is used to produce a list of dates +inc hour of every oom
@@ -579,7 +583,7 @@ def date_check(oom_date_count):
               ", " + Colours.GREEN + "2nd" + Colours.ENDC + " and" +
               Colours.GREEN + " last" + Colours.ENDC)
 
-
+# @profile
 def oom_record(oom_lf):
     '''
     Takes 1 argument - the log file to check
@@ -646,9 +650,11 @@ def oom_record(oom_lf):
     check_if_incident(
         counter, oom_date_count, total_rss, killed_services,
         service_value_list, oom_lf, all_killed_services)
-    check_dmesg(len(oom_date_count))
+    di = DmesgInfo(len(oom_date_count))
+    di.check_dmesg()
 
 
+# @profile
 def get_log_file(logf=None):
     '''
     Checks OS distribution and accepts arguments
@@ -659,10 +665,18 @@ def get_log_file(logf=None):
         if platform.linux_distribution() else None
 
     # If log file has been specificed by the user
-    if logf:
+    if logf and os.path.exists(logf):
         oom_log = logf
+        return oom_log
+    elif logf and not os.path.exists(logf):
+        print("")
+        print("Does the file specified exist? {0}".format(logf))
+        print("Please check again")
+        print("")
+        sys.exit(1)
+
     # Obtaining system default log files if no log file specified
-    elif not logf and os_check_value.lower() in SUPPORTED['CENTOS_RHEL']:
+    if not logf and os_check_value.lower() in SUPPORTED['CENTOS_RHEL']:
         oom_log = "/var/log/messages"
     elif not logf and os_check_value.lower() in SUPPORTED['UBUNTU_DEBIAN']:
         oom_log = "/var/log/syslog"
@@ -671,7 +685,7 @@ def get_log_file(logf=None):
         sys.exit(1)
     return oom_log
 
-
+# @profile
 def catch_log_exceptions(oom_log):
     '''
     Catch any errors with the analysing of the log file
@@ -685,7 +699,7 @@ def catch_log_exceptions(oom_log):
         print("")
         print(Colours.BOLD + "-" * 40 + Colours.ENDC)
 
-
+# @profile
 def main():
     '''
     Usage and help overview - Option parsing
@@ -704,19 +718,19 @@ def main():
         help="Specify a log to check")
 
     (options, args) = parser.parse_args()
+    _oom_logf = get_log_file()
+
     print_header()
+
     if options.quick:
-        quick_check_all_logs(find_all_logs(get_log_file()))
+        qc_all_logs(locate_all_logs(_oom_logf))
         print("")
-        return sys.exit(0)
+        sys.exit(0)
     elif options.file:
-        try:
-            return catch_log_exceptions(get_log_file(logf=args[0]))
-        except(EOFError, KeyboardInterrupt):
-            print("")
-            return sys.exit(1)
+        _oom_logf = get_log_file(logf=args[0])
+
     try:
-        return catch_log_exceptions(get_log_file())
+        return catch_log_exceptions(_oom_logf)
     except(EOFError, KeyboardInterrupt):
         print()
         return sys.exit(1)

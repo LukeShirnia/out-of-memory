@@ -111,7 +111,7 @@ def test_quick(fs, monkeypatch, capsys):
     monkeypatch.setattr(oom_analyzer.sys, 'argv', ['oom_analyzer.py', '--quick'])
     monkeypatch.setattr(oom_analyzer, 'get_log_file', returnlf)
     monkeypatch.setattr(oom_analyzer.GetLogData, 'checkfilesize', lambda x: True)
-    monkeypatch.setattr(oom_analyzer, 'check_dmesg', lambda x: True)
+    monkeypatch.setattr(oom_analyzer.DmesgInfo, 'check_dmesg', lambda x: True)
     fs.CreateFile('/var/log/messages', contents=LOGFILE)
     fs.CreateFile('/var/log/messages.1', contents=LOGFILE1)
     fs.CreateFile('/proc/meminfo', contents=MEMINFO)
@@ -126,7 +126,7 @@ def test_quick(fs, monkeypatch, capsys):
 def test_output(fs, monkeypatch, capsys):
     _lf = '/var/log/messages'
     monkeypatch.setattr(oom_analyzer.GetLogData, 'checkfilesize', lambda x: True)
-    monkeypatch.setattr(oom_analyzer, 'check_dmesg', lambda x: True)
+    monkeypatch.setattr(oom_analyzer.DmesgInfo, 'check_dmesg', lambda x: True)
     fs.CreateFile('/var/log/messages', contents=LOGFILE)
     fs.CreateFile('/var/log/messages.1', contents=LOGFILE1)
     fs.CreateFile('/var/log/messages.2', contents=LOGFILE2)
