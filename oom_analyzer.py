@@ -12,6 +12,7 @@ It will calculate:
 - And the top RAM consumers at the time of the incident
 """
 from __future__ import print_function
+import errno
 import sys
 import re
 import gzip
@@ -27,6 +28,23 @@ from optparse import OptionParser
 import subprocess
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+
+def std_exceptions(etype, value, tb):
+    """
+    The following exits cleanly on Ctrl-C or EPIPE
+    while treating other exceptions as before.
+    """
+    sys.excepthook = sys.__excepthook__
+    if issubclass(etype, KeyboardInterrupt):
+        pass
+    elif issubclass(etype, IOError) and value.errno == errno.EPIPE:
+        pass
+    else:
+        sys.__excepthook__(etype, value, tb)
+
+
+sys.excepthook = std_exceptions
 
 
 class Colours(object):
@@ -50,7 +68,7 @@ SUPPORTED = {
     "UBUNTU_DEBIAN": ['ubuntu', 'debian']
 }
 
-# @profile
+
 def print_header():
     '''
     Disclaimer and Script Header
@@ -71,7 +89,7 @@ def print_header():
           Colours.ENDC)
     print(Colours.CYAN + "-" * 40 + Colours.ENDC)
 
-# @profile
+
 def neat_oom_invoke():
     '''
     Print WARNING if there is an OOM issue
@@ -80,7 +98,7 @@ def neat_oom_invoke():
           Colours.ENDC)
     print("")
 
-# @profile
+
 def openfile(filename):
     '''
     Check if input file is a compressed or regular file
@@ -92,7 +110,7 @@ def openfile(filename):
     except AttributeError:
         return open(filename, "r")
 
-# @profile
+
 def system_resources():
     '''
     Get the RAM info from /proc
@@ -105,7 +123,7 @@ def system_resources():
             return system_memory
     return None
 
-# @profile
+
 def strip_line(line):
     '''
     Stripping all non required characters from the line so not to
@@ -126,13 +144,14 @@ class GetLogData(object):
         self._logfile = logfile
         self._size = 0
         self._info = ''
-    # @profile
+
     def lastlistgzip(self):
         """
         Reads file in chunks to reduce memory footprint
         saves last 2 chunks, combines and finds the last line
         """
         in_file = openfile(self._logfile)
+        line = ''
         chunks = ['', '']
         while 1:
             chunk = in_file.read(512*512)
@@ -145,7 +164,7 @@ class GetLogData(object):
         for line in data:
             pass
         return line
-    # @profile
+
     def size_of_file(self):
         """
         This function will return the file size of the script.
@@ -156,13 +175,22 @@ class GetLogData(object):
             file_info = os.stat(self._logfile)
             return (float(file_info.st_size) / 1024) / 1024
         return 0
-    # @profile
-    def checkfilesize(self):
+
+    def checkfilesize(self, skip=False):
         """
         Checking the size of the file isn't > 250MB
         This prevents script getting too large on a box that already has
         RAM issues.
         """
+        if skip:
+            print()
+            print(Colours.RED +
+                  "*****WARNING: SKIPPING FILE SIZE CHECK*****" + Colours.ENDC)
+            print(Colours.RED +
+                  "****Risk of OOM issues on small devices****" + Colours.ENDC)
+            print()
+            return True
+
         self._size = self.size_of_file()
         if self._size >= 300:
             print("")
@@ -189,7 +217,7 @@ class GetLogData(object):
             sys.exit(1)
         else:
             return True
-    # @profile
+
     def startdate(self):
         """
         Gets the log file start date from the first line of the file
@@ -197,23 +225,23 @@ class GetLogData(object):
         f = openfile(self._logfile)
         for line in f:
             return line.split()[0:3]
-    # @profile
+
     def enddate(self):
         """
         Get the end date of log file from the last line of the file
         """
         return self.lastlistgzip().split()[0:3]
-    # @profile
+
     def information(self):
         """
         Gather and return log file start and end date
         """
-        self.checkfilesize()
+        # If override flag specificed, skip the file check
         enddate = self.enddate()
         startdate = self.startdate()
         return (startdate, enddate)
 
-# @profile
+
 def print_oom_output(
         i, date_format, oom_incident, service_value_list):
     '''
@@ -243,7 +271,7 @@ def print_oom_output(
 
     print("")
 
-# @profile
+
 def check_if_incident(
         counter, oom_incident, service_value_list, oom_lf,
         all_killed_services):
@@ -286,7 +314,7 @@ def check_if_incident(
         qc_all_logs(locate_all_logs(oom_lf, option='exclude'))
         print("")
 
-# @profile
+
 def locate_all_logs(oom_log, option=None):
     '''
     This function finds all log files in the directory of
@@ -309,7 +337,7 @@ def locate_all_logs(oom_log, option=None):
                 result.remove(oom_log)
     return result
 
-# @profile
+
 def qc_all_logs(results):
     '''
     Quickly check all log files for oom incidents
@@ -336,7 +364,7 @@ def qc_all_logs(results):
                 i, total_occurences))
     select_next_logfile(next_logs_to_search)
 
-# @profile
+
 def select_next_logfile(log_file):
     '''
     This function is for the user to select the next log file they wish to
@@ -380,7 +408,6 @@ class DmesgInfo(object):
         self.oom_count = oom_count
         self.dmesg_count = []
 
-    # @profile
     def dmesg_output(self):
         '''
         Open a subprocess to read the output of the dmesg command line-by-line
@@ -393,7 +420,6 @@ class DmesgInfo(object):
         p.wait()
         devnull.close()
 
-    # @profile
     def compare_dmesg(self):
         '''
         Compare dmesg to syslog oom report
@@ -417,7 +443,6 @@ class DmesgInfo(object):
                   " option to check available log files")
             print("")
 
-    # @profile
     def check_dmesg(self):
         '''
         Read each line and search for oom string
@@ -429,7 +454,6 @@ class DmesgInfo(object):
         self.compare_dmesg()
 
 
-# @profile
 def showlogoverview(oom_lf, oom_number, all_killed_services):
     '''
     Get the start and end date of the current log file
@@ -475,7 +499,7 @@ def showlogoverview(oom_lf, oom_number, all_killed_services):
               Colours.ENDC + "time(s)")
     print("")
 
-# @profile
+
 def save_values(line, column_number):
     '''
     This function processes each line (when record = True)
@@ -485,7 +509,7 @@ def save_values(line, column_number):
     string = cols[column_number-1], cols[-1]
     return string
 
-# @profile
+
 def add_rss_for_processes(unique, list_of_values):
     '''
     Adding the RSS value of each service
@@ -509,7 +533,7 @@ def add_rss_for_processes(unique, list_of_values):
         total_service_usage.append(string)
     return total_service_usage
 
-# @profile
+
 def date_time(line):
     '''
     Creates a date object from an extracted string
@@ -520,7 +544,7 @@ def date_time(line):
         date_of_oom, "%b %d %H:%M:%S")
     return _date
 
-# @profile
+
 def strip_time(_dt):
     '''
     Used to summarise the hour OOM's occurred (excludes the mins and seconds)
@@ -528,7 +552,7 @@ def strip_time(_dt):
     return _dt + datetime.timedelta(
         hours=1, minutes=-_dt.minute, seconds=-_dt.second)
 
-# @profile
+
 def date_time_counter_split(dates_sorted):
     '''
     Split the date and OOM count ('May 12': 1) into 2 strings and
@@ -542,7 +566,7 @@ def date_time_counter_split(dates_sorted):
         sorted_dates.append(date + " " + str(occurences))
     return sorted_dates
 
-# @profile
+
 def date_check(oom_incident):
     '''
     The function is used to produce a list of dates +inc hour of every oom
@@ -579,7 +603,7 @@ def date_check(oom_incident):
               ", " + Colours.GREEN + "2nd" + Colours.ENDC + " and" +
               Colours.GREEN + " last" + Colours.ENDC)
 
-# @profile
+
 def oom_record(oom_lf):
     '''
     Takes 1 argument - the log file to check
@@ -647,20 +671,17 @@ def oom_record(oom_lf):
         if oom_incident[i]['oom_date_count']:
             incident_number += 1
 
-    #print()
-
     check_if_incident(
         counter, oom_incident, service_value_list, oom_lf, all_killed_services)
-    di = DmesgInfo(incident_number)
-    di.check_dmesg()
+    dmsg_info = DmesgInfo(incident_number)
+    dmsg_info.check_dmesg()
 
 
-# @profile
 def get_log_file(logf=None):
     '''
     Checks OS distribution and accepts arguments
     '''
-    # platform module is depricated in python 3.5+
+    #  platform module is depricated in python 3.5+
     os_check_value = \
         platform.linux_distribution()[0] \
         if platform.linux_distribution() else None
@@ -684,23 +705,24 @@ def get_log_file(logf=None):
     else:
         print("Unsupported OS")
         sys.exit(1)
+
     return oom_log
 
-# @profile
+
 def catch_log_exceptions(oom_log):
     '''
     Catch any errors with the analysing of the log file
     '''
-    #try:
-    oom_record(oom_log)
-    #except Exception as error:
-    #    print("")
-    #    print(Colours.RED + "Error:" + Colours.ENDC)
-    #    print(error)
-    #    print("")
-    #    print(Colours.BOLD + "-" * 40 + Colours.ENDC)
+    try:
+        oom_record(oom_log)
+    except Exception as error:
+        print("")
+        print(Colours.RED + "Error:" + Colours.ENDC)
+        print(error)
+        print("")
+        print(Colours.BOLD + "-" * 40 + Colours.ENDC)
 
-# @profile
+
 def main():
     '''
     Usage and help overview - Option parsing
@@ -717,6 +739,11 @@ def main():
         action="store_true",
         metavar="File",
         help="Specify a log to check")
+    parser.add_option(
+        "-o", "--override",
+        dest="override",
+        action="store_true",
+        help="Override the 300MB file limit")
 
     (options, args) = parser.parse_args()
     _oom_logf = get_log_file()
@@ -730,9 +757,12 @@ def main():
     elif options.file:
         _oom_logf = get_log_file(logf=args[0])
 
+    gld = GetLogData(_oom_logf)
+    gld.checkfilesize(skip=options.override)
+
     try:
         return catch_log_exceptions(_oom_logf)
-    except(EOFError, KeyboardInterrupt):
+    except EOFError:
         print()
         return sys.exit(1)
 
@@ -740,6 +770,6 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except(EOFError, KeyboardInterrupt):
+    except EOFError:
         print("")
         sys.exit(1)
