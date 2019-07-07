@@ -215,8 +215,7 @@ class GetLogData(object):
 
 # @profile
 def print_oom_output(
-        i, date_format, total_rss_per_incident,
-        killed_services, service_value_list):
+        i, date_format, oom_incident, service_value_list):
     '''
     Print the Output of an OOM incident (Inc TOP 5 RAM consumers)
     '''
@@ -227,10 +226,10 @@ def print_oom_output(
           Colours.CYAN + "{0:<1} MB".format(system_resources()) + Colours.ENDC)
     print(Colours.YELLOW + "Estimated RAM at OOM:   " + Colours.ENDC +
           Colours.CYAN + "{0:<3} MB".format(int(sum(
-            total_rss_per_incident[i] * 4) / 1024)) + Colours.ENDC)
+            oom_incident[i]['total_rss'] * 4) / 1024)) + Colours.ENDC)
     print(Colours.YELLOW + "Services" + Colours.ENDC + Colours.RED +
           " Killed:        " + Colours.ENDC + Colours.RED + "{0} ".format(
-            ", ".join(killed_services[i])) + Colours.ENDC)
+            ", ".join(oom_incident[i]['killed_services'])) + Colours.ENDC)
     print("")
     print(Colours.UNDERLINE +
           "Top 5 RAM Consumers at time of OOM:" + Colours.ENDC)
@@ -246,38 +245,37 @@ def print_oom_output(
 
 # @profile
 def check_if_incident(
-    counter, oom_date_count, total_rss_per_incident, killed_services,
-        service_value_list, oom_lf, all_killed_services):
+        counter, oom_incident, service_value_list, oom_lf,
+        all_killed_services):
     '''
     Check if OOM incident occurred.
     '''
-    date_format = []
+    oom_dates = []
+    oom_number = 1
+    for j in range(1, counter):
+        for k in oom_incident[j]['oom_date_count']:
+            oom_dates.append(datetime.datetime.strftime(k, '%b %d %H:%M:%S'))
+            oom_number += 1
+    oom_dates.sort()
 
-    for p in oom_date_count:
-        p = datetime.datetime.strftime(p, '%b %d %H:%M:%S')
-        date_format.append(p)
-
-    showlogoverview(oom_lf, oom_date_count, all_killed_services)
+    showlogoverview(oom_lf, oom_number, all_killed_services)
     counter = counter - 1
 
     if counter == 1:  # if only 1 instance of oom then print all
-        date_check(oom_date_count)
+        date_check(oom_dates)
         i = 1
         print_oom_output(
-            i, date_format, total_rss_per_incident,
-            killed_services, service_value_list)
+            i, oom_dates, oom_incident, service_value_list)
     elif counter == 2:  # if only 3 instance of oom then print all
-        date_check(oom_date_count)
+        date_check(oom_incident)
         for i in (1, 2):
             print_oom_output(
-                i, date_format, total_rss_per_incident,
-                killed_services, service_value_list)
+                i, oom_dates, oom_incident, service_value_list)
     elif counter >= 3:  # if more 3 or more oom instances, print 1st, 2nd, last
-        date_check(oom_date_count)
+        date_check(oom_incident)
         for i in (1, 2, counter - 1):
             print_oom_output(
-                i, date_format, total_rss_per_incident,
-                killed_services, service_value_list)
+                i, oom_dates, oom_incident, service_value_list)
     else:
         print("-" * 40)
         print("OOM has " + Colours.GREEN + "NOT" + Colours.ENDC +
@@ -432,7 +430,7 @@ class DmesgInfo(object):
 
 
 # @profile
-def showlogoverview(oom_lf, oom_date_count, all_killed_services):
+def showlogoverview(oom_lf, oom_number, all_killed_services):
     '''
     Get the start and end date of the current log file
     '''
@@ -457,17 +455,15 @@ def showlogoverview(oom_lf, oom_date_count, all_killed_services):
           "End Date  : " + Colours.ENDC + Colours.YELLOW + " %s " % (
             ", ".join(last_line)) + Colours.ENDC)
     print("")
-    if len(oom_date_count) > 4:
+    if oom_number > 4:
         neat_oom_invoke()
         print("Number of OOM occurrence in log file: " +
-              Colours.RED + " %s " % (len(oom_date_count) - 1) + Colours.ENDC)
-    elif len(oom_date_count) <= 4 and len(oom_date_count) > 0:
+              Colours.RED + " %s " % (oom_number - 1) + Colours.ENDC)
+    elif oom_number <= 4 and oom_number > 0:
         neat_oom_invoke()
-        print("Number of OOM occurrence in log file: %s " % (
-            len(oom_date_count)))
+        print("Number of OOM occurrence in log file: %s " % ((oom_number - 1)))
     else:
-        print("Number of OOM occurrence in log file: %s " % (
-            len(oom_date_count)))
+        print("Number of OOM occurrence in log file: %s " % ((oom_number - 1)))
         print("")
     all_killed_services = dict(
         (i, all_killed_services.count(i)) for i in all_killed_services)
@@ -547,18 +543,18 @@ def date_time_counter_split(dates_sorted):
     return sorted_dates
 
 # @profile
-def date_check(oom_date_count):
+def date_check(oom_incident):
     '''
     The function is used to produce a list of dates +inc hour of every oom
     occurrence in the log file
     '''
     dates_test = []
     dates_sorted = []
-    oom_date_count.sort()
-    for k in oom_date_count:
-        time = strip_time(k)
-        time = datetime.datetime.strftime(k, '%m-%d %H')
-        dates_test.append(time)
+    for j in oom_incident.keys():
+        for i in oom_incident[j]['oom_date_count']:
+            dates_test.append(datetime.datetime.strftime(i, '%m-%d %H'))
+    occurrences = len(dates_test)
+
     dates_test = dict((i, dates_test.count(i)) for i in dates_test)
     dates_sorted = sorted(dates_test.items())
     dates_test = date_time_counter_split(dates_sorted)
@@ -574,11 +570,11 @@ def date_check(oom_date_count):
     for value in dates_test:
         print(value)
     print("")
-    if len(oom_date_count) >= 3:
+    if occurrences >= 3:
         print(Colours.HEADER + Colours.UNDERLINE + "Note:" +
               Colours.ENDC + " Only Showing: " + Colours.GREEN + "3 " +
               Colours.ENDC + "of the" + Colours.RED + " %s occurrence" %
-              (len(oom_date_count)) + Colours.ENDC)
+              (len(dates_test)) + Colours.ENDC)
         print("Showing the " + Colours.GREEN + "1st" + Colours.ENDC +
               ", " + Colours.GREEN + "2nd" + Colours.ENDC + " and" +
               Colours.GREEN + " last" + Colours.ENDC)
@@ -590,13 +586,10 @@ def oom_record(oom_lf):
     Checks line-by-line for specific string match that indicated OOM has taken
     place
     '''
-    oom_date_count = []
     list_of_values = {}
-    total_rss = {}
-    killed_services = {}
-    unique_services = {}
     service_value_list = {}
     all_killed_services = []
+    oom_incident = {}
     record = False
     record_oom_true_false = False
     counter = 1
@@ -605,13 +598,14 @@ def oom_record(oom_lf):
         killed = re.search("Killed process (.*) total", line)
         if "[ pid ]   uid  tgid total_vm      rss" in line.strip() \
                 and "kernel" in line.lower():
-            total_rss[counter] = []
-            killed_services[counter] = []
-            unique_services[counter] = []
+            oom_incident[counter] = {}
+            oom_incident[counter]['total_rss'] = []
+            oom_incident[counter]['killed_services'] = []
+            oom_incident[counter]['oom_date_count'] = []
             list_of_values[counter] = []
             record = True
             record_oom_true_false = False
-            oom_date_count.append(date_time(line))
+            oom_incident[counter]['oom_date_count'].append(date_time(line))
             line = strip_line(line)
             column_number = line.split().index("rss") + 1
         elif "Out of memory" in line.strip() and record or \
@@ -637,20 +631,27 @@ def oom_record(oom_lf):
                     line, column_number))  # service rss calulation initiation
                 rss_value = int(line.split()[int(column_number)-1])
                 # calculate total value of all processes:
-                total_rss[counter].append(rss_value)
+                oom_incident[counter]['total_rss'].append(rss_value)
             except Exception:
                 pass
         elif record_oom_true_false and killed:
             killed = killed.group(1)
             killed = strip_line(killed)
             killed = killed.split(",")[-1].strip("0123456789 ")
-            killed_services[counter-1].append(killed)
+            oom_incident[counter-1]['killed_services'].append(killed)
             all_killed_services.append(killed)
     f.close()
+
+    incident_number = 1
+    for i in oom_incident:
+        if oom_incident[i]['oom_date_count']:
+            incident_number += 1
+
+    #print()
+
     check_if_incident(
-        counter, oom_date_count, total_rss, killed_services,
-        service_value_list, oom_lf, all_killed_services)
-    di = DmesgInfo(len(oom_date_count))
+        counter, oom_incident, service_value_list, oom_lf, all_killed_services)
+    di = DmesgInfo(incident_number)
     di.check_dmesg()
 
 
@@ -690,14 +691,14 @@ def catch_log_exceptions(oom_log):
     '''
     Catch any errors with the analysing of the log file
     '''
-    try:
-        oom_record(oom_log)
-    except Exception as error:
-        print("")
-        print(Colours.RED + "Error:" + Colours.ENDC)
-        print(error)
-        print("")
-        print(Colours.BOLD + "-" * 40 + Colours.ENDC)
+    #try:
+    oom_record(oom_log)
+    #except Exception as error:
+    #    print("")
+    #    print(Colours.RED + "Error:" + Colours.ENDC)
+    #    print(error)
+    #    print("")
+    #    print(Colours.BOLD + "-" * 40 + Colours.ENDC)
 
 # @profile
 def main():
