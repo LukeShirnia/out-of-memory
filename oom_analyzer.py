@@ -483,7 +483,7 @@ def showlogoverview(oom_lf, oom_number, all_killed_services):
         neat_oom_invoke()
         print("Number of OOM occurrence in log file: " +
               Colours.RED + " %s " % (oom_number - 1) + Colours.ENDC)
-    elif oom_number <= 4 and oom_number > 0:
+    elif oom_number <= 4 and ( oom_number - 1 ) > 0:
         neat_oom_invoke()
         print("Number of OOM occurrence in log file: %s " % ((oom_number - 1)))
     else:
@@ -598,7 +598,7 @@ def date_check(oom_incident):
         print(Colours.HEADER + Colours.UNDERLINE + "Note:" +
               Colours.ENDC + " Only Showing: " + Colours.GREEN + "3 " +
               Colours.ENDC + "of the" + Colours.RED + " %s occurrence" %
-              (len(dates_test)) + Colours.ENDC)
+              (occurrences) + Colours.ENDC)
         print("Showing the " + Colours.GREEN + "1st" + Colours.ENDC +
               ", " + Colours.GREEN + "2nd" + Colours.ENDC + " and" +
               Colours.GREEN + " last" + Colours.ENDC)
@@ -682,9 +682,11 @@ def get_log_file(logf=None):
     Checks OS distribution and accepts arguments
     '''
     #  platform module is depricated in python 3.5+
-    os_check_value = \
-        platform.linux_distribution()[0] \
-        if platform.linux_distribution() else None
+    _id, _, _ = platform.dist()
+
+    if _id not in SUPPORTED['CENTOS_RHEL'] and _id not in SUPPORTED['UBUNTU_DEBIAN']:
+        print("Unsupported OS")
+        sys.exit(1)
 
     # If log file has been specificed by the user
     if logf and os.path.exists(logf):
@@ -698,9 +700,9 @@ def get_log_file(logf=None):
         sys.exit(1)
 
     # Obtaining system default log files if no log file specified
-    if not logf and os_check_value.lower() in SUPPORTED['CENTOS_RHEL']:
+    if not logf and _id.lower() in SUPPORTED['CENTOS_RHEL']:
         oom_log = "/var/log/messages"
-    elif not logf and os_check_value.lower() in SUPPORTED['UBUNTU_DEBIAN']:
+    elif not logf and _id.lower() in SUPPORTED['UBUNTU_DEBIAN']:
         oom_log = "/var/log/syslog"
     else:
         print("Unsupported OS")
