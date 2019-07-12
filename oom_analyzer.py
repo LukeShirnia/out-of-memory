@@ -684,7 +684,7 @@ def get_log_file(logf=None):
     #  platform module is depricated in python 3.5+
     _id, _, _ = platform.dist()
 
-    if _id not in SUPPORTED['CENTOS_RHEL'] and _id not in SUPPORTED['UBUNTU_DEBIAN']:
+    if _id.lower() not in SUPPORTED['CENTOS_RHEL'] and _id.lower() not in SUPPORTED['UBUNTU_DEBIAN']:
         print("Unsupported OS")
         sys.exit(1)
 
