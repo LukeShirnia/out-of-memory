@@ -1,5 +1,11 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'python:2.7'
+      args '-v /var/cache/pip/2.7:/var/cache/pip/2.7'
+    }
+
+  }
   stages {
     stage('pylint') {
       parallel {
@@ -18,5 +24,8 @@ pipeline {
       }
     }
 
+  }
+  environment {
+    PIP_DOWNLOAD_CACHE = '/var/cache/pip/2.7'
   }
 }
