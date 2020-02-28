@@ -7,25 +7,34 @@ pipeline {
 
   }
   stages {
-    stage('pylint') {
+    stage('Setup Tests') {
+      steps {
+        echo 'Installing Requirements...'
+        sh '''pip install --cache-dir=/var/cache/pip/2.7 -U pip
+'''
+      }
+    }
+
+    stage('oom-Analyzer Tests') {
       parallel {
-        stage('pylint') {
+        stage('oom-Analyzer Tests') {
           steps {
-            sh 'pylint --rcfile=pylint.cfg oom_analyzer.py -j 4 -f parseable -r n'
+            echo 'Running PyTest'
+            sh '''pytest --cov oom_analyzer --cov-report xml:cobertura.xml --cov-report term-missing --junitxml oom_analyzer.xml
+'''
           }
         }
 
-        stage('Pycodestyle') {
+        stage('') {
           steps {
-            sh 'pycodestyle oom_analyzer.py'
+            echo 'Running Pylint on '
+            sh '''pylint --rcfile=pylint.cfg oom_analyzer.py -j 4 -f parseable -r n
+'''
           }
         }
 
       }
     }
 
-  }
-  environment {
-    PIP_DOWNLOAD_CACHE = '/var/cache/pip/2.7'
   }
 }
