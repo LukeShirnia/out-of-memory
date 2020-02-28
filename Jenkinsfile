@@ -12,6 +12,8 @@ pipeline {
         echo 'Installing Requirements...'
         sh '''pip install --cache-dir=/var/cache/pip/2.7 -U pip
 '''
+        sh '''pip install --cache-dir=/var/cache/pip/2.7 -r tests/requirements.txt
+'''
       }
     }
 
@@ -25,7 +27,7 @@ pipeline {
           }
         }
 
-        stage('') {
+        stage('error') {
           steps {
             echo 'Running Pylint on '
             sh '''pylint --rcfile=pylint.cfg oom_analyzer.py -j 4 -f parseable -r n
