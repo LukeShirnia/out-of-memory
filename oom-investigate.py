@@ -623,8 +623,8 @@ def get_log_file():
     Checks OS distribution and accepts arguments
     '''
     print_header()
-    os_check_value = os_check()
     if len(argv) == 1 or len(argv) == 2:
+        os_check_value = os_check()
         if os_check_value.lower() in CentOS_RedHat_Distro:
             OOM_LOG = "/var/log/messages"
             size_of_file = file_size(OOM_LOG)
@@ -652,25 +652,13 @@ def get_log_file():
     elif len(argv) == 3:
         script, option, OOM_LOG = argv
         size_of_file = file_size(OOM_LOG)
-        if os_check_value.lower() in CentOS_RedHat_Distro:
-            if size_of_file < 250:  # check file size is below 250 MB
-                return OOM_LOG
-            else:
-                print("")
-                print("!!! File is too LARGE !!!")
-                print("Please consider splitting the file into smaller chunks \
-                    (such as dates)")
-        elif os_check_value.lower() in Ubuntu_Debian_Distro:
-            if size_of_file < 250:
-                return OOM_LOG
-            else:
-                print("")
-                print("!!! File is too LARGE !!!")
-                print("Please consider splitting the file into smaller chunks \
-                    (such as dates)")
+        if size_of_file < 250:  # check file size is below 250 MB
+            return OOM_LOG
         else:
-            print("Unsupported OS")
-            print(OOM_LOG)
+            print("")
+            print("!!! File is too LARGE !!!")
+            print("Please consider splitting the file into smaller chunks \
+                   (such as dates)")
     else:
         print("Too Many Arguments - ", (len(argv) - 1))
         print("Try again")
