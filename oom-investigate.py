@@ -79,18 +79,6 @@ def os_check():
         print("Stop Using a Rubbish OS!!")
 
 
-def system_resources():
-    '''
-    Get the RAM info from /proc
-    '''
-    with open("/proc/meminfo", "r") as meminfo:
-        for lines in meminfo:
-            if "MemTotal" in lines.strip():
-                memory_value = int(lines.split()[1])
-                system_memory = int(memory_value / 1024)
-                return system_memory
-
-
 def strip_rss(line, column_number):
     '''
     Obtain the RSS value of a service from the line
@@ -119,7 +107,7 @@ def strip_line(line):
 
 
 def print_oom_output(
-        i, date_format, system_resources, total_rss_per_incident,
+        i, date_format, system_ram, total_rss_per_incident,
         killed_services, service_value_list):
     '''
     Print the Output of an OOM incident (Inc TOP 5 RAM consumers)
@@ -128,7 +116,7 @@ def print_oom_output(
     print(bcolors.BOLD + bcolors.PURPLE + "{0} ".format(
         date_format[i - 1]) + bcolors.ENDC)
     print(bcolors.YELLOW + "System RAM:             " + bcolors.ENDC +
-        bcolors.CYAN + "{0:<1} MB".format(system_resources()) + bcolors.ENDC)
+        bcolors.CYAN + "{0:<1} MB".format(system_ram) + bcolors.ENDC)
     print(bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC +
         bcolors.CYAN + "{0:<3} MB".format(int(sum(
             total_rss_per_incident[i] * 4) / 1024)) + bcolors.ENDC)
@@ -150,7 +138,7 @@ def print_oom_output(
 
 
 def check_if_incident(
-    counter, oom_date_count, total_rss_per_incident, killed_services,
+        counter, oom_date_count, system_ram, total_rss_per_incident, killed_services,
         service_value_list, LOG_FILE, all_killed_services):
     '''
     Check if OOM incident occurred. ADD FUNCTION TO PROMPT FOR OTHER LOG FILES
@@ -170,19 +158,19 @@ def check_if_incident(
         date_check(oom_date_count)
         i = 1
         print_oom_output(
-            i, date_format, system_resources, total_rss_per_incident,
+            i, date_format, system_ram, total_rss_per_incident,
             killed_services, service_value_list)
     elif counter == 2:  # if only 3 instance of oom then print all
         date_check(oom_date_count)
         for i in (1, 2):
             print_oom_output(
-                i, date_format, system_resources, total_rss_per_incident,
+                i, date_format, system_ram, total_rss_per_incident,
                 killed_services, service_value_list)
     elif counter >= 3:  # if more 3 or more oom instances, print 1st, 2nd, last
         date_check(oom_date_count)
         for i in (1, 2, counter - 1):
             print_oom_output(
-                i, date_format, system_resources, total_rss_per_incident,
+                i, date_format, system_ram, total_rss_per_incident,
                 killed_services, service_value_list)
     else:
         print("-" * 40)
@@ -553,7 +541,13 @@ def OOM_record(LOG_FILE):
     record = False
     record_oom_true_false = False
     counter = 1
+    system_ram = None
     for line in inLogFile:
+        # total RAM printed in preable before each OOM-killer event
+        # as count of 4K pages.
+        m = re.search("([0-9]+) pages RAM", line)
+        if m:
+            system_ram = int(m.group(1)) * 4 / 1024
         killed = re.search("Killed process (.*) total", line)
         if "[ pid ]   uid  tgid total_vm      rss" in line.strip() \
                 and "kernel" in line.lower():
@@ -608,7 +602,7 @@ def OOM_record(LOG_FILE):
             all_killed_services.append(killed)
     inLogFile.close()
     check_if_incident(
-        counter, oom_date_count, total_rss, killed_services,
+        counter, oom_date_count, system_ram, total_rss, killed_services,
         service_value_list, LOG_FILE, all_killed_services)
     check_dmesg(len(oom_date_count))
 
