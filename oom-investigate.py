@@ -454,10 +454,16 @@ def date_time(line):
     Creates a date object from an extracted string
     retreived from the log line
     '''
-    date_of_oom = line.split()[0:3]
-    date_of_oom = " ".join(date_of_oom)
-    date_check = datetime.datetime.strptime(
-        date_of_oom, "%b %d %H:%M:%S")
+    if line[0] == '[':
+        # dmesg-style date: [Mon Feb  1 09:08:13 2021]
+        date_of_oom = line[1:].split("]")[0]
+        date_check = datetime.datetime.strptime(date_of_oom, "%c")
+    else:
+        # syslog-style date format.
+        date_of_oom = line.split()[0:3]
+        date_of_oom = " ".join(date_of_oom)
+        date_check = datetime.datetime.strptime(
+            date_of_oom, "%b %d %H:%M:%S")
     return date_check
 
 
@@ -549,8 +555,7 @@ def OOM_record(LOG_FILE):
         if m:
             system_ram = int(m.group(1)) * 4 / 1024
         killed = re.search("Killed process (.*) total", line)
-        if "[ pid ]   uid  tgid total_vm      rss" in line.strip() \
-                and "kernel" in line.lower():
+        if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
             total_rss[counter] = []
             killed_services[counter] = []
             unique_services[counter] = []
@@ -560,9 +565,6 @@ def OOM_record(LOG_FILE):
             oom_date_count.append(date_time(line))
             line = strip_line(line)
             column_number = find_rss_column(line.split())
-        elif "kernel" not in line.lower() and record:  # Skips log entries
-            # that may be interfering with oom output from kernel
-            pass
         elif " hi:" in line.strip() and record:
             pass
         elif "MAC=" in line.strip() and record:  # Skips log entires in
