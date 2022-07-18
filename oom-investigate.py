@@ -554,6 +554,11 @@ def OOM_record(LOG_FILE):
         m = re.search("([0-9]+) pages RAM", line)
         if m:
             system_ram = int(m.group(1)) * 4 / 1024
+        # Alternatively if running inside a cgroup then use the configured
+        # memory limit.
+        m = re.search("memory: usage [0-9]+kB, limit ([0-9]+)kB", line)
+        if m:
+            system_ram = int(m.group(1)) / 1024
         killed = re.search("Killed process (.*) total", line)
         if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
             total_rss[counter] = []
@@ -678,6 +683,7 @@ def catch_log_exceptions(oom_log):
         print(error)
         print("")
         print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
+        raise
 
 
 def main():
