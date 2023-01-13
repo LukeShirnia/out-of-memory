@@ -560,7 +560,7 @@ def OOM_record(LOG_FILE):
         if m:
             system_ram = int(m.group(1)) / 1024
         killed = re.search("Killed process (.*) total", line)
-        if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
+        if re.search("\[\s+pid\s+\]   uid  tgid total_vm      rss", line):
             total_rss[counter] = []
             killed_services[counter] = []
             unique_services[counter] = []
