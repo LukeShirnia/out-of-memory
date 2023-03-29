@@ -457,11 +457,13 @@ def run(system, log_file, show_counter, reverse):
 
     # Display OOM instances based on the show_counter and reverse (if provided)
     for i, instance in enumerate(show_instances, start=1):
-        print(f"OOM Instance {i}:")
+        print("OOM Instance {}:".format(i))
         print("  Processes:")
         for process in instance["processes"]:
             print(
-                f"    PID: {process['pid']}, RSS: {process['rss']} MB, Name: {process['name']}"
+                "    PID: {}, RSS: {} MB, Name: {}".format(
+                    process["pid"], process["rss"], process["name"]
+                )
             )
         print("  Killed Processes: " + ",".join(instance["killed"]))
         print()
