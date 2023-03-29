@@ -4,15 +4,19 @@
 # Source:       https://github.com/LukeShirnia/out-of-memory/
 from __future__ import print_function
 
+import datetime
 import os
+import re
+import sys
 import warnings
+from optparse import OptionParser
 
 warnings.filterwarnings(
     "ignore", category=DeprecationWarning
 )  # Hide platform.dist() related deprecation warnings
 
 
-VERSION = "1.0.0"
+__version__ = "1.0.0"
 
 # Helper functions # {{{
 def readfile(filename):
@@ -90,6 +94,8 @@ class System(Printer):
         _id, _version, _ = self.get_distro_info()
         self.id = _id or "unknown"
         self.version = _version or "Unknown Version"
+        self.log_files = []
+        self.find_logs()
 
         if self.id in ["redhat", "rhel"]:
             self.id = "redhat"
@@ -178,7 +184,99 @@ class System(Printer):
             except ModuleNotFoundError:  # pylint: disable=undefined-variable
                 return self.parse_os_release()
 
+    def parse_file(self, file_path, patterns):
+        if os.path.isfile(file_path):
+            with open(file_path, 'r') as f:
+                for line in f:
+                    for pattern, extractor in patterns:
+                        if pattern in line:
+                            path = extractor(line)
+                            if not os.path.isfile(path):
+                                path = file_path
+                            self.log_files.append(path)
 
-if __name__ == "__main__":
+    def find_logs(self):
+        # Check for rsyslog.conf on Linux systems
+        self.parse_file('/etc/rsyslog.conf', [('*.info', lambda line: line.split()[-1])])
+
+        # Check for syslog.conf on older Linux systems and macOS systems
+        self.parse_file('/etc/syslog.conf', [
+            ('*.info;mail.none;authpriv.none;cron.none', lambda line: line.split()[-1]),
+            ('/var/log/system.log', lambda line: line.split()[-1])
+        ])
+
+        self.parse_file('/etc/asl.conf', [
+            ('? [= Sender kernel] file (.+)', lambda line: '/var/log/' + line.split()[-1])
+        ])
+
+        # Check for journald.conf on newer Linux systems
+        self.parse_file('/etc/systemd/journald.conf', [('Storage=', lambda line: line.split('=')[-1].strip())])
+
+        if self.log_files:
+            return self.log_files
+        else:
+            return None
+
+
+def main():
+    parser = OptionParser(usage="usage: %prog [option]")
+    parser.add_option(
+        "-q",
+        "--quick",
+        dest="quick",
+        action="store_true",
+        help="Quick Search all rotated system files",
+    )
+    parser.add_option(
+        "-f",
+        "--file",
+        dest="file",
+        action="store_true",
+        metavar="File",
+        help="Specify a log to check",
+    )
+    parser.add_option(
+        "-o",
+        "--override",
+        dest="override",
+        action="store_true",
+        help="Override the 300MB file limit",
+    )
+    parser.add_option(
+        "-V",
+        "--version",
+        dest="version",
+        action="store_true",
+        help="Display the scripts version number",
+    )
+
+    (options, args) = parser.parse_args()
+
+    if options.version:
+        print("htLook Version: %s" % __version__)
+        return sys.exit(0)
+
+    if options.file:
+        if len(args) == 0:
+            print("Please specify a log file to check")
+            return sys.exit(1)
+        file = args[0]
+        if not os.path.isfile(file):
+            print("File %s does not exist" % file)
+            sys.exit(1)
+        else:
+            if os.path.getsize(file) > 314572800 and not options.override:
+                print(
+                    "File is larger than 300MB, please specify the -o option to override"
+                )
+                sys.exit(1)
+            else:
+                print(f"Checking file {file}")
+                print("")
+
     system = System()
     print(system)
+
+
+if __name__ == "__main__":
+    main()
