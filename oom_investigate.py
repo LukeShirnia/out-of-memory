@@ -48,7 +48,7 @@ def readfile(filename):
     return ret
 
 
-class Printer(object):  # {{{
+class Printer(object):
     """
     Base class for all facts
 
@@ -107,6 +107,9 @@ class Printer(object):  # {{{
         return lines
 
 
+# }}}
+
+
 def main_header():
     """
     Disclaimer and Script Header
@@ -162,6 +165,7 @@ class System(Printer):
         self.distro, self.version, _ = self.get_distro_info()
         self.log_files = []
         self.log_to_use = None
+        self.ram = self.get_ram_info()
         self.find_logs()
 
     def __str__(self):
@@ -272,23 +276,168 @@ class System(Printer):
         if self.log_files:
             self.log_to_use = self.log_files[0]
 
-    def print_pretty(self):
-        distroversion = "%s %s" % (self.distro, self.version)
-        self._lines.append(self._header("OS: ") + self._notice(distroversion))
-        self._lines.append(self._header("Python Version: ") + self._notice(self.python_version))
+    def get_ram_info(self):
+        try:
+            mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+            mem_gib = mem_bytes / (1024.0 ** 3)
+            return round(mem_gib, 2)
+        except ValueError:
+            return None
+
+    def populate_lines(self):
+        # Only populate lines if they haven't been populated already
+        if self._lines:
+            return
+
+        distro_version = "{} {}".format(self.distro, self.version)
+        self._lines.append(self._header("OS: ") + self._notice(distro_version))
+        self._lines.append(
+            self._header("Python Version: ") + self._notice(self.python_version)
+        )
+        self._lines.append(
+            self._header("RAM: ") + self._notice("{} GiB".format(self.ram))
+        )
         self._lines += [
-                self._header("Default System Log: ") + self._notice(self.log_files[0])
-            ]
+            self._header("Default System Log: ") + self._notice(self.log_files[0])
+        ]
+        self._lines.append("")
         self._lines.append(self._header("Using Log: ") + self._ok(self.log_to_use))
+
+    def print_pretty(self):
+        self.populate_lines()
 
         print()
         for line in self._lines:
             print(line)
+
+
+class OOMAnalyzer:
+    def __init__(self, log_file):
+        self.log_file = log_file
+        self.oom_instances = []
+        self.current_instance = []
+        self.rss_column = 7
+        self.pid_column = 3
+        self.log_start_time = None
+        self.log_end_time = None
+
+    def parse_log(self):
+        last_line = None
+        with open(self.log_file, "r") as f:
+            for line in f:
+                last_line = line  # Used to extract the end time of the log
+                if self.log_start_time is None:
+                    self.log_start_time = " ".join(line.split()[0:3])
+                # Start of a new OOM instance
+                if self.is_oom_start(line):
+                    self.pid_column = line.split().index("pid")
+                    self.rss_column = line.split().index("rss")
+                    if self.current_instance:
+                        self.oom_instances.append(self.current_instance)
+                    self.current_instance = {"processes": [], "killed": []}
+                # Processing the new OOM instance
+                elif (
+                    not self.is_killed_process(line)
+                    and self.is_process_line(line)
+                    and self.current_instance is not None
+                ):
+                    self.current_instance["processes"].append(
+                        self.parse_process_line(line)
+                    )
+                # Find killed services for this OOM instance
+                elif self.is_killed_process(line) and self.current_instance is not None:
+                    print("killed")
+                    self.current_instance["killed"].append(
+                        self.parse_killed_process_line(line)
+                    )
+                elif self.current_instance:
+                    self.oom_instances.append(self.current_instance)
+                    self.current_instance = None
+
+        if self.log_end_time is None:
+            self.log_end_time = " ".join(last_line.split()[0:3])
+
+        if self.current_instance:
+            self.oom_instances.append(self.current_instance)
+
+        return self.oom_instances
+
+    def is_oom_start(self, line):
+        """Check if the line is the start of a new OOM instance"""
+        return "[ pid ]" in line
+
+    def is_process_line(self, line):
+        return re.match(r".*\[\s*\d+\].*", line)
+
+    def parse_process_line(self, line):
+        """Parse the line and obtain the pid, rss and name of the process"""
+        fields = line.split()
+        pid = int(fields[self.pid_column].strip("[]"))
+        rss = int(fields[self.rss_column])
+        rss_mb = rss * 4 // 1024
+        name = fields[-1]
+        return {"pid": pid, "rss": rss_mb, "name": name}
+
+    def is_killed_process(self, line):
+        """Check if the line is a killed process line"""
+        return "killed process" in line.lower()
+
+    def parse_killed_process_line(self, line):
+        """Extract the name of the killed process"""
+        match = re.match(r"Killed process \d+, UID \d+, \((\S+)\)", line)
+        # print(f"foo {match.group(1)}")
+        return match.group(1)
+
+    def extract_timestamp(self, line):
+        timestamp = line.split()[0]
+        return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
+
+
+def run(system, log_file):
+    analyzer = OOMAnalyzer(log_file)
+    oom_instances = analyzer.parse_log()
+    print(system._header("Log Start Time: ") + system._notice(analyzer.log_start_time))
+    print(system._header("Log End Time: ") + system._notice(analyzer.log_end_time))
+    print()
+
+    # Exit early is no OOM instances were found
+    if len(oom_instances) == 0:
+        print(
+            system._ok(
+                "No OOM instances found! The file {} has no OOM instances.".format(
+                    log_file
+                )
+            )
+        )
         print()
+        return sys.exit(0)
 
+    # Display OOM instances
+    print(
+        "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
+            colours=system, horizontal_line="-" * 40
+        )
+    )
+    print()
+    print(system._critical("######## OOM WARNING ########"))
+    print()
+    print(system._critical("OOM Instances: {}".format(len(oom_instances))))
 
-def run(log_file):
-    pass
+    print()
+
+    # for i, instance in enumerate(oom_instances, start=1):
+    #     print(f"OOM Instance {i}:")
+    #     print("  Processes:")
+    #     for process in instance["processes"]:
+    #         print(
+    #             f"    PID: {process['pid']}, RSS: {process['rss']} MB, Name: {process['name']}"
+    #         )
+    #     print("  Killed Processes:")
+    #     for killed_process in instance["killed"]:
+    #         print(
+    #             f"    PID: {killed_process['pid']}, RSS: {killed_process['rss']} MB, Name: {killed_process['name']}"
+    #         )
+    #     print()
 
 
 def main():
@@ -336,18 +485,18 @@ def main():
         log = args[0]
         if not os.path.isfile(log):
             print("File %s does not exist" % log)
-            sys.exit(1)
+            return sys.exit(1)
         else:
             system.log_to_use = log
             if os.path.getsize(log) > 314572800 and not options.override:
                 print(
                     "File is larger than 300MB, please specify the -o option to override"
                 )
-                sys.exit(1)
+                return sys.exit(1)
 
     system.print_pretty()
 
-    return run(log)
+    return run(system, log)
 
 
 if __name__ == "__main__":
