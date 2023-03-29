@@ -116,68 +116,58 @@ def main_header():
     analyzer_name = "Out Of Memory Analyzer"
     current_year = datetime.datetime.now().year
     author_name = "LukeShirnia"
-    disclaimer_text = "If system OOMs too viciously, there may be nothing logged!"
+    disclaimer_text = "If the system OOMs too viciously, there may be nothing logged!"
     warning_text = "Do NOT take this script as FACT, ALWAYS investigate further."
 
-    print(f"{colours.CYAN}{horizontal_line}{colours.RESET}")
+    print(
+        "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
+            colours=colours, horizontal_line=horizontal_line
+        )
+    )
     print("      _____ _____ _____ ")
     print("     |     |     |     |")
     print("     |  |  |  |  | | | |")
     print("     |_____|_____|_|_|_|")
-    print(f"     {analyzer_name}")
+    print("     {}".format(analyzer_name))
     print("")
-    print(f"\u00A9 {current_year} {author_name}")
+    print("\u00A9 {} {}".format(current_year, author_name))
     print("")
-    print(f"{colours.RED}{colours.UNDERLINE}Disclaimer:{colours.RESET}")
-    print(f"{colours.RED}{disclaimer_text}")
-    print(f"{warning_text}{colours.RESET}")
-    print(f"{colours.CYAN}{horizontal_line}{colours.RESET}")
+    print(
+        "{colours.RED}{colours.UNDERLINE}Disclaimer:{colours.RESET}".format(
+            colours=colours
+        )
+    )
+    print(
+        "{colours.RED}{disclaimer_text}".format(
+            colours=colours, disclaimer_text=disclaimer_text
+        )
+    )
+    print(
+        "{warning_text}{colours.RESET}".format(
+            warning_text=warning_text, colours=colours
+        )
+    )
+    print(
+        "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
+            colours=colours, horizontal_line=horizontal_line
+        )
+    )
 
 
 class System(Printer):
     """System information"""
 
     def __init__(self):
-        _id, _version, _ = self.get_distro_info()
-        self.id = _id or "unknown"
-        self.version = _version or "Unknown Version"
+        self.python_version = None
+        self.distro, self.version, _ = self.get_distro_info()
         self.log_files = []
+        self.log_to_use = None
         self.find_logs()
-
-        if self.id in ["redhat", "rhel"]:
-            self.id = "redhat"
-            self.distro = "RHEL"
-        elif self.id == "centos":
-            self.distro = "CentOS"
-        elif self.id == "fedora":
-            self.distro = "Fedora"
-        elif self.id == "oracle":
-            self.distro = "Oracle"
-        elif self.id in ["Ubuntu", "ubuntu"]:
-            self.id = "Ubuntu"
-            self.distro = "Ubuntu"
-        elif self.id == "debian":
-            self.distro = "Debian"
-        elif self.id == "almalinux":
-            self.distro = "Alma Linux"
-        elif self.id in ["Rocky Linux", "rocky"]:
-            self.id = "Rocky Linux"
-            self.distro = "Rocky Linux"
-        elif "Amazon Linux" in self.id or self.id == "amazon":
-            self.distro = "Amazon"
-            self.id = "amazon"
-        else:
-            self.distro = self.id
-
-        distroversion = "%s %s" % (self.distro, self.version)
-        self._system = self._ok(distroversion)
-        self._lines = ["OS: " + self._system]
 
     def __str__(self):
         return self._system
 
     def parse_os_release(self):
-        # Borrowed from the parse_os_release helper in rs-block-storage
         distro = version = None
         release_id_map = {
             "ol": "oracle",
@@ -199,6 +189,10 @@ class System(Printer):
         return distro, version, None
 
     def get_distro_info(self):
+        python_version = sys.version_info
+        self.python_version = "{}.{}.{}".format(
+            python_version.major, python_version.minor, python_version.micro
+        )
         # pylint: disable=deprecated-method
         # pylint: disable=import-outside-toplevel
         try:
@@ -274,14 +268,23 @@ class System(Printer):
             ],
         )
 
+        # Adding log info to the lines list
         if self.log_files:
-            return self.log_files
-        else:
-            return None
+            self.log_to_use = self.log_files[0]
 
     def print_pretty(self):
+        distroversion = "%s %s" % (self.distro, self.version)
+        self._lines.append(self._header("OS: ") + self._notice(distroversion))
+        self._lines.append(self._header("Python Version: ") + self._notice(self.python_version))
+        self._lines += [
+                self._header("Default System Log: ") + self._notice(self.log_files[0])
+            ]
+        self._lines.append(self._header("Using Log: ") + self._ok(self.log_to_use))
+
+        print()
         for line in self._lines:
             print(line)
+        print()
 
 
 def run(log_file):
@@ -318,9 +321,13 @@ def main():
     try:
         log = system.log_files[0]
     except IndexError:
-        print("Error: Unable to find log file for this Operating System")
-        return sys.exit(1)
-    system.print_pretty()
+        # Only return an error if the user has not specified a log file
+        if not options.file:
+            print(
+                "Error: Unable to find log file for this Operating System. "
+                "Please specify a log file with the -f option"
+            )
+            return sys.exit(1)
 
     if options.file:
         if len(args) == 0:
@@ -331,14 +338,14 @@ def main():
             print("File %s does not exist" % log)
             sys.exit(1)
         else:
+            system.log_to_use = log
             if os.path.getsize(log) > 314572800 and not options.override:
                 print(
                     "File is larger than 300MB, please specify the -o option to override"
                 )
                 sys.exit(1)
-            else:
-                print(f"Checking file {log}")
-                print("")
+
+    system.print_pretty()
 
     return run(log)
 
