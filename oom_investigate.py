@@ -5,6 +5,7 @@
 from __future__ import print_function
 
 import datetime
+import errno
 import os
 import re
 import sys
@@ -16,7 +17,25 @@ warnings.filterwarnings(
 )  # Hide platform.dist() related deprecation warnings
 
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
+
+
+def std_exceptions(etype, value, tb):
+    """
+    The following exits cleanly on Ctrl-C or EPIPE
+    while treating other exceptions as before.
+    """
+    sys.excepthook = sys.__excepthook__
+    if issubclass(etype, KeyboardInterrupt):
+        pass
+    elif issubclass(etype, IOError) and value.errno == errno.EPIPE:
+        pass
+    else:
+        sys.__excepthook__(etype, value, tb)
+
+
+sys.excepthook = std_exceptions
+
 
 # Helper functions # {{{
 def readfile(filename):
@@ -42,6 +61,7 @@ class Printer(object):  # {{{
     CYAN = "\033[0;96m"
     ORANGE = "\033[1;33m"
     RED = "\033[1;31m"
+    UNDERLINE = "\033[4m"
     RESET = "\033[0m"
 
     # Fact's severity
@@ -85,6 +105,33 @@ class Printer(object):  # {{{
         if self.HEADER:
             lines = [self.WHITE + self.HEADER + ":" + self.RESET] + lines
         return lines
+
+
+def main_header():
+    """
+    Disclaimer and Script Header
+    """
+    colours = Printer()
+    horizontal_line = "-" * 40
+    analyzer_name = "Out Of Memory Analyzer"
+    current_year = datetime.datetime.now().year
+    author_name = "LukeShirnia"
+    disclaimer_text = "If system OOMs too viciously, there may be nothing logged!"
+    warning_text = "Do NOT take this script as FACT, ALWAYS investigate further."
+
+    print(f"{colours.CYAN}{horizontal_line}{colours.RESET}")
+    print("      _____ _____ _____ ")
+    print("     |     |     |     |")
+    print("     |  |  |  |  | | | |")
+    print("     |_____|_____|_|_|_|")
+    print(f"     {analyzer_name}")
+    print("")
+    print(f"\u00A9 {current_year} {author_name}")
+    print("")
+    print(f"{colours.RED}{colours.UNDERLINE}Disclaimer:{colours.RESET}")
+    print(f"{colours.RED}{disclaimer_text}")
+    print(f"{warning_text}{colours.RESET}")
+    print(f"{colours.CYAN}{horizontal_line}{colours.RESET}")
 
 
 class System(Printer):
@@ -186,7 +233,7 @@ class System(Printer):
 
     def parse_file(self, file_path, patterns):
         if os.path.isfile(file_path):
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 for line in f:
                     for pattern, extractor in patterns:
                         if pattern in line:
@@ -197,36 +244,52 @@ class System(Printer):
 
     def find_logs(self):
         # Check for rsyslog.conf on Linux systems
-        self.parse_file('/etc/rsyslog.conf', [('*.info', lambda line: line.split()[-1])])
-
-        # Check for syslog.conf on older Linux systems and macOS systems
-        self.parse_file('/etc/syslog.conf', [
-            ('*.info;mail.none;authpriv.none;cron.none', lambda line: line.split()[-1]),
-            ('/var/log/system.log', lambda line: line.split()[-1])
-        ])
-
-        self.parse_file('/etc/asl.conf', [
-            ('? [= Sender kernel] file (.+)', lambda line: '/var/log/' + line.split()[-1])
-        ])
+        self.parse_file(
+            "/etc/rsyslog.conf", [("*.info", lambda line: line.split()[-1])]
+        )
 
         # Check for journald.conf on newer Linux systems
-        self.parse_file('/etc/systemd/journald.conf', [('Storage=', lambda line: line.split('=')[-1].strip())])
+        self.parse_file(
+            "/etc/systemd/journald.conf",
+            [("Storage=", lambda line: line.split("=")[-1].strip())],
+        )
+
+        # Check for syslog.conf on older Linux systems and older macOS systems
+        self.parse_file(
+            "/etc/syslog.conf",
+            [
+                ("*.info", lambda line: line.split()[-1]),
+                ("/var/log/system.log", lambda line: line.split()[-1]),
+            ],
+        )
+
+        # Check for asl.conf on newer macOS systems
+        self.parse_file(
+            "/etc/asl.conf",
+            [
+                (
+                    "? [= Sender kernel] file (.+)",
+                    lambda line: "/var/log/" + line.split()[-1],
+                )
+            ],
+        )
 
         if self.log_files:
             return self.log_files
         else:
             return None
 
+    def print_pretty(self):
+        for line in self._lines:
+            print(line)
+
+
+def run(log_file):
+    pass
+
 
 def main():
     parser = OptionParser(usage="usage: %prog [option]")
-    parser.add_option(
-        "-q",
-        "--quick",
-        dest="quick",
-        action="store_true",
-        help="Quick Search all rotated system files",
-    )
     parser.add_option(
         "-f",
         "--file",
@@ -234,13 +297,6 @@ def main():
         action="store_true",
         metavar="File",
         help="Specify a log to check",
-    )
-    parser.add_option(
-        "-o",
-        "--override",
-        dest="override",
-        action="store_true",
-        help="Override the 300MB file limit",
     )
     parser.add_option(
         "-V",
@@ -253,29 +309,38 @@ def main():
     (options, args) = parser.parse_args()
 
     if options.version:
-        print("htLook Version: %s" % __version__)
+        print("OOM Analyzer Version: %s" % __version__)
         return sys.exit(0)
+
+    # Obtain and print system information
+    main_header()
+    system = System()
+    try:
+        log = system.log_files[0]
+    except IndexError:
+        print("Error: Unable to find log file for this Operating System")
+        return sys.exit(1)
+    system.print_pretty()
 
     if options.file:
         if len(args) == 0:
             print("Please specify a log file to check")
             return sys.exit(1)
-        file = args[0]
-        if not os.path.isfile(file):
-            print("File %s does not exist" % file)
+        log = args[0]
+        if not os.path.isfile(log):
+            print("File %s does not exist" % log)
             sys.exit(1)
         else:
-            if os.path.getsize(file) > 314572800 and not options.override:
+            if os.path.getsize(log) > 314572800 and not options.override:
                 print(
                     "File is larger than 300MB, please specify the -o option to override"
                 )
                 sys.exit(1)
             else:
-                print(f"Checking file {file}")
+                print(f"Checking file {log}")
                 print("")
 
-    system = System()
-    print(system)
+    return run(log)
 
 
 if __name__ == "__main__":
