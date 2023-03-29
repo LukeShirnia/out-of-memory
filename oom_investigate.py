@@ -2,6 +2,14 @@
 #
 # Author:       Luke Shirnia
 # Source:       https://github.com/LukeShirnia/out-of-memory/
+####
+# To Do:
+# - Add ability to parse zipped and gzipped files
+# - Handle random log file issues (see old script)
+# - Fix start and end time on linutmint
+# - Add OOM instance number to each OOM instance
+# - Add start and end time to each OOM instance
+####
 from __future__ import print_function
 
 import datetime
@@ -320,9 +328,11 @@ class OOMAnalyzer:
         self.pid_column = 3
         self.log_start_time = None
         self.log_end_time = None
+        self.oom_counter = 0
 
     def parse_log(self):
         last_line = None
+        found_killed = False
         with open(self.log_file, "r") as f:
             for line in f:
                 last_line = line  # Used to extract the end time of the log
@@ -334,10 +344,14 @@ class OOMAnalyzer:
                     self.rss_column = line.split().index("rss")
                     if self.current_instance:
                         self.oom_instances.append(self.current_instance)
+                        found_killed = False
                     self.current_instance = {"processes": [], "killed": []}
                 # Processing the new OOM instance
                 elif (
-                    not self.is_killed_process(line)
+                    # Once we've found a killed process, we don't care about this until the next
+                    # OOM instance
+                    not found_killed
+                    and not self.is_killed_process(line)
                     and self.is_process_line(line)
                     and self.current_instance is not None
                 ):
@@ -346,13 +360,10 @@ class OOMAnalyzer:
                     )
                 # Find killed services for this OOM instance
                 elif self.is_killed_process(line) and self.current_instance is not None:
-                    print("killed")
+                    found_killed = True
                     self.current_instance["killed"].append(
                         self.parse_killed_process_line(line)
                     )
-                elif self.current_instance:
-                    self.oom_instances.append(self.current_instance)
-                    self.current_instance = None
 
         if self.log_end_time is None:
             self.log_end_time = " ".join(last_line.split()[0:3])
@@ -384,23 +395,30 @@ class OOMAnalyzer:
 
     def parse_killed_process_line(self, line):
         """Extract the name of the killed process"""
-        match = re.match(r"Killed process \d+, UID \d+, \((\S+)\)", line)
-        # print(f"foo {match.group(1)}")
-        return match.group(1)
+        match = re.search(
+            r"Killed process \d+, UID \d+, \((\S+)\)", line, re.IGNORECASE
+        )
+        if match:
+            return match.group(1)
+        return None
 
     def extract_timestamp(self, line):
         timestamp = line.split()[0]
         return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
 
 
-def run(system, log_file):
+def run(system, log_file, show_counter, reverse):
     analyzer = OOMAnalyzer(log_file)
     oom_instances = analyzer.parse_log()
+
+    system.print_pretty()
+
+    # Display log start and end times
     print(system._header("Log Start Time: ") + system._notice(analyzer.log_start_time))
     print(system._header("Log End Time: ") + system._notice(analyzer.log_end_time))
     print()
 
-    # Exit early is no OOM instances were found
+    # Exit early if no OOM instances were found
     if len(oom_instances) == 0:
         print(
             system._ok(
@@ -412,7 +430,7 @@ def run(system, log_file):
         print()
         return sys.exit(0)
 
-    # Display OOM instances
+    # Display OOM Overview
     print(
         "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
             colours=system, horizontal_line="-" * 40
@@ -421,23 +439,33 @@ def run(system, log_file):
     print()
     print(system._critical("######## OOM WARNING ########"))
     print()
-    print(system._critical("OOM Instances: {}".format(len(oom_instances))))
+    print(
+        system._header("This device has run out of memory ")
+        + system._critical(str(len(oom_instances)))
+        + system._header(" times.")
+    )
 
     print()
+    print(system._notice("To increase the number of OOM instances, use the -s flag."))
+    print()
+    print(system._header("Displaying {} OOM instances:".format(show_counter)))
+    print()
 
-    # for i, instance in enumerate(oom_instances, start=1):
-    #     print(f"OOM Instance {i}:")
-    #     print("  Processes:")
-    #     for process in instance["processes"]:
-    #         print(
-    #             f"    PID: {process['pid']}, RSS: {process['rss']} MB, Name: {process['name']}"
-    #         )
-    #     print("  Killed Processes:")
-    #     for killed_process in instance["killed"]:
-    #         print(
-    #             f"    PID: {killed_process['pid']}, RSS: {killed_process['rss']} MB, Name: {killed_process['name']}"
-    #         )
-    #     print()
+    # Handle the reverse flag and slice the OOM instances based on the show_counter
+    normal_or_reversed = -1 if reverse else 1
+    show_instances = oom_instances[::normal_or_reversed][:show_counter]
+
+    # Display OOM instances based on the show_counter and reverse (if provided)
+    for i, instance in enumerate(show_instances, start=1):
+        print(f"OOM Instance {i}:")
+        print("  Processes:")
+        for process in instance["processes"]:
+            print(
+                f"    PID: {process['pid']}, RSS: {process['rss']} MB, Name: {process['name']}"
+            )
+        print("  Killed Processes: " + ",".join(instance["killed"]))
+        print()
+        print()
 
 
 def main():
@@ -451,6 +479,24 @@ def main():
         help="Specify a log to check",
     )
     parser.add_option(
+        "-s",
+        "--show",
+        dest="show_counter",
+        action="store_true",
+        default=5,
+        help="Override the default number of OOM instances to show",
+    )
+    parser.add_option(
+        "-r",
+        "--reverse",
+        dest="reverse",
+        default=False,
+        action="store_true",
+        help="Show the most recent OOM instances first. "
+        "By default we show the fist OOM instances found in the file, "
+        "which are located at the beginning of the file.",
+    )
+    parser.add_option(
         "-V",
         "--version",
         dest="version",
@@ -460,12 +506,15 @@ def main():
 
     (options, args) = parser.parse_args()
 
+    # Show the version number and exit
     if options.version:
         print("OOM Analyzer Version: %s" % __version__)
         return sys.exit(0)
 
-    # Obtain and print system information
+    # Print the script header
     main_header()
+
+    # Instantiate the System class and validate the default log file
     system = System()
     try:
         log = system.log_files[0]
@@ -478,6 +527,12 @@ def main():
             )
             return sys.exit(1)
 
+    # Check if the user has specified a valid number of OOM instances to show
+    if not isinstance(options.show_counter, int):
+        print("Please specify a valid number of OOM instances to show")
+        return sys.exit(1)
+
+    # Check if the user has specified a valid log file and it is not too large
     if options.file:
         if len(args) == 0:
             print("Please specify a log file to check")
@@ -494,9 +549,7 @@ def main():
                 )
                 return sys.exit(1)
 
-    system.print_pretty()
-
-    return run(system, log)
+    return run(system, log, options.show_counter, options.reverse)
 
 
 if __name__ == "__main__":
