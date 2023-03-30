@@ -353,6 +353,7 @@ class OOMAnalyzer(Printer):
                         self.oom_instances.append(self.current_instance)
                         found_killed = False
                     self.current_instance = {
+                        "total_mb": 0,
                         "processes": [],
                         "killed": [],
                         "start_time": timestamp,
@@ -370,9 +371,10 @@ class OOMAnalyzer(Printer):
                     # Sometimes the log line isn't complete which might be an issue with the kernel
                     # logging during the incident. If we can't parse the line, lets skip it
                     try:
-                        self.current_instance["processes"].append(
-                            self.parse_process_line(line)
-                        )
+                        processed_line = self.parse_process_line(line)
+                        self.current_instance["processes"].append(processed_line)
+                        # Get a running total for each OOM instance
+                        self.current_instance["total_mb"] += processed_line["rss"]
                     except ValueError:
                         # Debug: Add a "print(line)"" here if you wish know which lines are skipped
                         continue
@@ -467,7 +469,7 @@ class OOMAnalyzer(Printer):
             self._header("Start Time: ")
             + self._notice(oom_instance["start_time"].strftime("%a %b %d %X"))
         )
-        print(self._header("The following processes were killed::"))
+        print(self._header("The following processes were killed:"))
         for killed in oom_instance["killed"]:
             print("  " + self._critical(killed))
 
@@ -554,18 +556,42 @@ def run(system, show_counter, reverse):
         + system._header(" times in this log file.")
     )
 
+    # Handle the reverse flag and slice the OOM instances based on the show_counter
+    normal_or_reversed = -1 if reverse else 1
+    show_instances = oom_instances[::normal_or_reversed][:show_counter]
+    largest_incident = max(oom_instances, key=lambda d: d["total_mb"])
+
+    # Only display this message if there are more oom instances than the show_counter
     if oom_occurrences > show_counter:
         print(
             system._notice(
                 "(To increase the number of OOM instances displayed, use the -s flag)"
             )
         )
+        # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
+        # display it.
+        if largest_incident["instance_number"] not in list(
+            [i["instance_number"] for i in show_instances]
+        ):
+            horizontal_line = "-" * 40
+            print()
+            print(
+                "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
+                    colours=system, horizontal_line=horizontal_line
+                )
+            )
+            print()
+            print(system._critical("Largest Incident!"))
+            print(system._header("The largest OOM incident in this log file was:"))
+            print()
+            analyzer.print_pretty_oom_instance(largest_incident)
+            print(
+                "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
+                    colours=system, horizontal_line=horizontal_line
+                )
+            )
         print()
         print(system._header("Displaying {} OOM instances:".format(show_counter)))
-
-    # Handle the reverse flag and slice the OOM instances based on the show_counter
-    normal_or_reversed = -1 if reverse else 1
-    show_instances = oom_instances[::normal_or_reversed][:show_counter]
 
     # Display OOM instances based on the show_counter and reverse (if provided)
     print()
