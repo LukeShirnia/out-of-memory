@@ -4,13 +4,11 @@
 # Source:       https://github.com/LukeShirnia/out-of-memory/
 ####
 # To Do:
-# - Add ability to parse zipped and gzipped files
 # - Handle random log file issues (see old script)
 # - Fix start and end time on linutmint
-# - Add start time to each OOM instance
-# - fix messages.empty/messages/syslog
-# - fix /var/log/message.long
-# - add ability to check dmesg
+# - Check script gets multiple killed service for a single oom instance
+# - add JournalCTL and DMESG
+# - Add total of services killed
 ####
 from __future__ import print_function
 
@@ -417,10 +415,12 @@ class OOMAnalyzer(Printer):
     def parse_killed_process_line(self, line):
         """Extract the name of the killed process"""
         match = re.search(
-            r"Killed process \d+, UID \d+, \((\S+)\)", line, re.IGNORECASE
+            r"Killed process \d+(?:, UID \d+)?, \((\S+)\)|Killed process \d+ \((\S+)\)",
+            line,
+            re.IGNORECASE,
         )
         if match:
-            return match.group(1)
+            return match.group(1) or match.group(2)
         return None
 
     def extract_timestamp(self, line):
@@ -509,7 +509,8 @@ def run(system, show_counter, reverse):
                     process["pid"], process["rss"], process["name"]
                 )
             )
-        print("  Killed Processes: " + ",".join(instance["killed"]))
+        processes_killed = instance.get("killed") if instance.get("killed") else []
+        print("  Killed Processes: {}".format(",".join(processes_killed)))
         print()
         print()
 
@@ -566,7 +567,7 @@ def main():
     # Instantiate the System class and validate the default log file
     system = System()
     try:
-        log = system.log_files[0]
+        system.log_to_use = system.log_files[0]
     except IndexError:
         # Only return an error if the user has not specified a log file
         if not options.file:
@@ -579,7 +580,7 @@ def main():
     # Check if the user has specified a valid log file and it is not too large
     if options.file:
         if not os.path.isfile(options.file):
-            print("File %s does not exist" % log)
+            print("File {} does not exist".format(options.file))
             return sys.exit(1)
         else:
             system.log_to_use = options.file
