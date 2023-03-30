@@ -7,8 +7,10 @@
 # - Add ability to parse zipped and gzipped files
 # - Handle random log file issues (see old script)
 # - Fix start and end time on linutmint
-# - Add OOM instance number to each OOM instance
-# - Add start and end time to each OOM instance
+# - Add start time to each OOM instance
+# - fix messages.empty/messages/syslog
+# - fix /var/log/message.long
+# - add ability to check dmesg
 ####
 from __future__ import print_function
 
@@ -174,7 +176,7 @@ class System(Printer):
         self.log_files = []
         self.log_to_use = None
         self.ram = self.get_ram_info()
-        self.find_logs()
+        self.find_system_logs()
 
     def __str__(self):
         return self._system
@@ -248,7 +250,7 @@ class System(Printer):
                                 path = file_path
                             self.log_files.append(path)
 
-    def find_logs(self):
+    def find_system_logs(self):
         # Check for rsyslog.conf on Linux systems
         self.parse_file(
             "/etc/rsyslog.conf", [("*.info", lambda line: line.split()[-1])]
@@ -319,7 +321,9 @@ class System(Printer):
             print(line)
 
 
-class OOMAnalyzer:
+class OOMAnalyzer(Printer):
+    """Class to analyze OOM logs"""
+
     def __init__(self, log_file):
         self.log_file = log_file
         self.oom_instances = []
@@ -336,16 +340,26 @@ class OOMAnalyzer:
         with open(self.log_file, "r") as f:
             for line in f:
                 last_line = line  # Used to extract the end time of the log
+                # Extract the start timestamp from the line
                 if self.log_start_time is None:
-                    self.log_start_time = " ".join(line.split()[0:3])
+                    self.log_start_time = self.extract_timestamp(line)
+
                 # Start of a new OOM instance
                 if self.is_oom_start(line):
+                    self.oom_counter += 1
+                    timestamp = self.extract_timestamp(line)
                     self.pid_column = line.split().index("pid")
                     self.rss_column = line.split().index("rss")
+                    # If we've already started an OOM instance, add it to the list adn start a new
                     if self.current_instance:
                         self.oom_instances.append(self.current_instance)
                         found_killed = False
-                    self.current_instance = {"processes": [], "killed": []}
+                    self.current_instance = {
+                        "processes": [],
+                        "killed": [],
+                        "start_time": timestamp,
+                        "instance_number": self.oom_counter,
+                    }
                 # Processing the new OOM instance
                 elif (
                     # Once we've found a killed process, we don't care about this until the next
@@ -365,9 +379,11 @@ class OOMAnalyzer:
                         self.parse_killed_process_line(line)
                     )
 
+        # Extract the end timestamp from the last line
         if self.log_end_time is None:
-            self.log_end_time = " ".join(last_line.split()[0:3])
+            self.log_end_time = self.extract_timestamp(last_line)
 
+        # Add the last OOM instance to the list
         if self.current_instance:
             self.oom_instances.append(self.current_instance)
 
@@ -403,27 +419,46 @@ class OOMAnalyzer:
         return None
 
     def extract_timestamp(self, line):
-        timestamp = line.split()[0]
-        return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
+        """Method to extract the timestamp from the line"""
+        # dmesg-style date: [Mon Feb  1 09:08:13 2021]
+        if line[0] == "[":
+            raw_timestamp = line[1:].split("]")[0]
+            timestamp_object = datetime.datetime.strptime(raw_timestamp, "%c")
+        # syslog-style date format.
+        else:
+            raw_timestamp_list = line.split()[0:3]
+            raw_timestamp = " ".join(raw_timestamp_list)
+            timestamp_object = datetime.datetime.strptime(
+                raw_timestamp, "%b %d %H:%M:%S"
+            )
+        return timestamp_object
+
+    def print_pretty(self):
+        """Method to print the OOM instances in a pretty format"""
+        print(
+            self._header("Log Start Time: ")
+            + self._notice(self.log_start_time.strftime("%a %b %d %X"))
+        )
+        print(
+            self._header("Log End Time: ")
+            + self._notice(self.log_end_time.strftime("%a %b %d %X"))
+        )
+        print()
 
 
-def run(system, log_file, show_counter, reverse):
-    analyzer = OOMAnalyzer(log_file)
+def run(system, show_counter, reverse):
+    analyzer = OOMAnalyzer(system.log_to_use)
     oom_instances = analyzer.parse_log()
 
     system.print_pretty()
-
-    # Display log start and end times
-    print(system._header("Log Start Time: ") + system._notice(analyzer.log_start_time))
-    print(system._header("Log End Time: ") + system._notice(analyzer.log_end_time))
-    print()
+    analyzer.print_pretty()
 
     # Exit early if no OOM instances were found
     if len(oom_instances) == 0:
         print(
             system._ok(
                 "No OOM instances found! The file {} has no OOM instances.".format(
-                    log_file
+                    system.log_to_use
                 )
             )
         )
@@ -446,7 +481,11 @@ def run(system, log_file, show_counter, reverse):
     )
 
     print()
-    print(system._notice("To increase the number of OOM instances, use the -s flag."))
+    print(
+        system._notice(
+            "To increase the number of OOM instances displayed, use the -s flag."
+        )
+    )
     print()
     print(system._header("Displaying {} OOM instances:".format(show_counter)))
     print()
@@ -456,8 +495,8 @@ def run(system, log_file, show_counter, reverse):
     show_instances = oom_instances[::normal_or_reversed][:show_counter]
 
     # Display OOM instances based on the show_counter and reverse (if provided)
-    for i, instance in enumerate(show_instances, start=1):
-        print("OOM Instance {}:".format(i))
+    for instance in show_instances:
+        print("OOM Instance {}:".format(instance["instance_number"]))
         print("  Processes:")
         for process in instance["processes"]:
             print(
@@ -476,7 +515,7 @@ def main():
         "-f",
         "--file",
         dest="file",
-        action="store_true",
+        type="string",
         metavar="File",
         help="Specify a log to check",
     )
@@ -484,7 +523,8 @@ def main():
         "-s",
         "--show",
         dest="show_counter",
-        action="store_true",
+        type=int,
+        metavar="Show",
         default=5,
         help="Override the default number of OOM instances to show",
     )
@@ -506,7 +546,7 @@ def main():
         help="Display the scripts version number",
     )
 
-    (options, args) = parser.parse_args()
+    (options, _) = parser.parse_args()
 
     # Show the version number and exit
     if options.version:
@@ -529,29 +569,20 @@ def main():
             )
             return sys.exit(1)
 
-    # Check if the user has specified a valid number of OOM instances to show
-    if not isinstance(options.show_counter, int):
-        print("Please specify a valid number of OOM instances to show")
-        return sys.exit(1)
-
     # Check if the user has specified a valid log file and it is not too large
     if options.file:
-        if len(args) == 0:
-            print("Please specify a log file to check")
-            return sys.exit(1)
-        log = args[0]
-        if not os.path.isfile(log):
+        if not os.path.isfile(options.file):
             print("File %s does not exist" % log)
             return sys.exit(1)
         else:
-            system.log_to_use = log
-            if os.path.getsize(log) > 314572800 and not options.override:
+            system.log_to_use = options.file
+            if os.path.getsize(options.file) > 314572800 and not options.override:
                 print(
                     "File is larger than 300MB, please specify the -o option to override"
                 )
                 return sys.exit(1)
 
-    return run(system, log, options.show_counter, options.reverse)
+    return run(system, options.show_counter, options.reverse)
 
 
 if __name__ == "__main__":
