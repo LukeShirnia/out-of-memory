@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import datetime
 import errno
+import gzip
 import os
 import re
 import sys
@@ -48,14 +49,12 @@ sys.excepthook = std_exceptions
 
 
 # Helper functions # {{{
-def readfile(filename):
-    """
-    Return the whole contents of the given file
-    """
-    file_descriptor = open(filename)
-    ret = file_descriptor.read().strip()
-    file_descriptor.close()
-    return ret
+def open_file(file_path):
+    """Handle reading of gzipped and regular files"""
+    if file_path.endswith(".gz"):
+        return gzip.open(file_path, "rt")
+    else:
+        return open(file_path, "r")
 
 
 class Printer(object):
@@ -192,7 +191,7 @@ class System(Printer):
         }
 
         if os.path.isfile("/etc/os-release"):
-            with open("/etc/os-release") as f:
+            with open_file("/etc/os-release") as f:
                 for line in f:
                     if line.startswith("VERSION_ID="):
                         version = line.split("=")[1].strip('" \n')
@@ -241,7 +240,7 @@ class System(Printer):
 
     def parse_file(self, file_path, patterns):
         if os.path.isfile(file_path):
-            with open(file_path, "r") as f:
+            with open_file(file_path) as f:
                 for line in f:
                     for pattern, extractor in patterns:
                         if pattern in line:
@@ -327,7 +326,7 @@ class OOMAnalyzer(Printer):
     def __init__(self, log_file):
         self.log_file = log_file
         self.oom_instances = []
-        self.current_instance = []
+        self.current_instance = None
         self.rss_column = 7
         self.pid_column = 3
         self.log_start_time = None
@@ -337,7 +336,7 @@ class OOMAnalyzer(Printer):
     def parse_log(self):
         last_line = None
         found_killed = False
-        with open(self.log_file, "r") as f:
+        with open_file(self.log_file) as f:
             for line in f:
                 last_line = line  # Used to extract the end time of the log
                 # Extract the start timestamp from the line
@@ -369,9 +368,15 @@ class OOMAnalyzer(Printer):
                     and self.is_process_line(line)
                     and self.current_instance is not None
                 ):
-                    self.current_instance["processes"].append(
-                        self.parse_process_line(line)
-                    )
+                    # Sometimes the log line isn't complete, maybe an issue with the kernel logging
+                    # during the incident. If we can't parse the line, lets skip it
+                    try:
+                        self.current_instance["processes"].append(
+                            self.parse_process_line(line)
+                        )
+                    except ValueError:
+                        # Debug: Add a "print(line)"" here if you wish know which lines are skipped
+                        continue
                 # Find killed services for this OOM instance
                 elif self.is_killed_process(line) and self.current_instance is not None:
                     found_killed = True
@@ -394,7 +399,7 @@ class OOMAnalyzer(Printer):
         return "[ pid ]" in line
 
     def is_process_line(self, line):
-        return re.match(r".*\[\s*\d+\].*", line)
+        return re.match(r".*\[\s*\d+\]\s*\d+\s+\d+\s+\d+\s+.*", line)
 
     def parse_process_line(self, line):
         """Parse the line and obtain the pid, rss and name of the process"""
@@ -507,6 +512,8 @@ def run(system, show_counter, reverse):
         print("  Killed Processes: " + ",".join(instance["killed"]))
         print()
         print()
+
+    return sys.exit(0)
 
 
 def main():
