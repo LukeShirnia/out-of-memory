@@ -9,6 +9,8 @@
 # - Check script gets multiple killed service for a single oom instance
 # - add JournalCTL and DMESG
 # - Add total of services killed
+# - reduce memory footprint if possible
+# - always show highest ram consuming incident
 ####
 from __future__ import print_function
 
@@ -326,7 +328,6 @@ class OOMAnalyzer(Printer):
         self.oom_instances = []
         self.current_instance = None
         self.rss_column = 7
-        self.pid_column = 3
         self.log_start_time = None
         self.log_end_time = None
         self.oom_counter = 0
@@ -343,10 +344,10 @@ class OOMAnalyzer(Printer):
 
                 # Start of a new OOM instance
                 if self.is_oom_start(line):
+                    line = self.strip_brackets_pid(line)
                     self.oom_counter += 1
                     timestamp = self.extract_timestamp(line)
-                    self.pid_column = line.split().index("pid")
-                    self.rss_column = line.split().index("rss")
+                    self.rss_column = line.split().index("rss") + 1
                     # If we've already started an OOM instance, add it to the list adn start a new
                     if self.current_instance:
                         self.oom_instances.append(self.current_instance)
@@ -366,8 +367,8 @@ class OOMAnalyzer(Printer):
                     and self.is_process_line(line)
                     and self.current_instance is not None
                 ):
-                    # Sometimes the log line isn't complete, maybe an issue with the kernel logging
-                    # during the incident. If we can't parse the line, lets skip it
+                    # Sometimes the log line isn't complete which might be an issue with the kernel
+                    # logging during the incident. If we can't parse the line, lets skip it
                     try:
                         self.current_instance["processes"].append(
                             self.parse_process_line(line)
@@ -392,6 +393,9 @@ class OOMAnalyzer(Printer):
 
         return self.oom_instances
 
+    def strip_brackets_pid(self, log_line):
+        return log_line.replace("[", "").replace("]", "")
+
     def is_oom_start(self, line):
         """Check if the line is the start of a new OOM instance"""
         return "[ pid ]" in line
@@ -402,11 +406,10 @@ class OOMAnalyzer(Printer):
     def parse_process_line(self, line):
         """Parse the line and obtain the pid, rss and name of the process"""
         fields = line.split()
-        pid = int(fields[self.pid_column].strip("[]"))
         rss = int(fields[self.rss_column])
         rss_mb = rss * 4 // 1024
         name = fields[-1]
-        return {"pid": pid, "rss": rss_mb, "name": name}
+        return {"rss": rss_mb, "name": name}
 
     def is_killed_process(self, line):
         """Check if the line is a killed process line"""
@@ -438,7 +441,72 @@ class OOMAnalyzer(Printer):
             )
         return timestamp_object
 
-    def print_pretty(self):
+    def sorted_results(self, oom_processes_list):
+        """Method to sort the OOM processes by RSS"""
+        result = {}
+        count = {}
+        for item in oom_processes_list:
+            process = item["name"]
+            rss = item["rss"]
+            if process in result:
+                result[process] += rss
+                count[process] += 1
+            else:
+                result[process] = rss
+                count[process] = 1
+        return sorted(result.items(), key=lambda x: x[1], reverse=True), count
+
+    def print_pretty_oom_instance(self, oom_instance):
+        """Method to print the OOM instance in a pretty format"""
+        # Print general overview
+        print(
+            self._header("OOM Instance Number: ")
+            + self._notice(str(oom_instance["instance_number"]))
+        )
+        print(
+            self._header("Start Time: ")
+            + self._notice(oom_instance["start_time"].strftime("%a %b %d %X"))
+        )
+        print(self._header("The following processes were killed::"))
+        for killed in oom_instance["killed"]:
+            print("  " + self._critical(killed))
+
+        sorted_result, count = self.sorted_results(oom_instance["processes"])
+
+        # Calculate column widths dynamically
+        process_width = max(len(process) for process, _ in sorted_result) + 2
+        count_width = max(len(str(count[process])) for process, _ in sorted_result) + 2
+        rss_width = max(len(str(rss)) for _, rss in sorted_result) + 7
+
+        # Print header row
+        print(self._header("Processes (showing top 10 processes):"))
+        header_row = (
+            "{process:<{process_width}}{count:<{count_width}}{rss:<{rss_width}}".format(
+                process="PROCESS",
+                process_width=process_width - 3,
+                count="COUNT",
+                count_width=count_width + 3,
+                rss="RSS (MB)",
+                rss_width=rss_width,
+            )
+        )
+        print(self._header("  " + header_row.rstrip()))
+
+        # Print data rows
+        for process, rss in sorted_result[:10]:
+            data_row = "{process:<{process_width}}{count:<{count_width}}{rss:<{rss_width}}".format(
+                process=process,
+                process_width=process_width,
+                count=count[process],
+                count_width=count_width,
+                rss="{} MB".format(rss),
+                rss_width=rss_width,
+            )
+            print("  " + self._notice(data_row.rstrip()))
+
+        print()
+
+    def print_pretty_log_info(self):
         """Method to print the OOM instances in a pretty format"""
         print(
             self._header("Log Start Time: ")
@@ -456,7 +524,7 @@ def run(system, show_counter, reverse):
     oom_instances = analyzer.parse_log()
 
     system.print_pretty()
-    analyzer.print_pretty()
+    analyzer.print_pretty_log_info()
 
     # Exit early if no OOM instances were found
     if len(oom_instances) == 0:
@@ -479,40 +547,30 @@ def run(system, show_counter, reverse):
     print()
     print(system._critical("######## OOM WARNING ########"))
     print()
+    oom_occurrences = len(oom_instances)
     print(
         system._header("This device has run out of memory ")
-        + system._critical(str(len(oom_instances)))
-        + system._header(" times.")
+        + system._critical(str(oom_occurrences))
+        + system._header(" times in this log file.")
     )
 
-    print()
-    print(
-        system._notice(
-            "To increase the number of OOM instances displayed, use the -s flag."
+    if oom_occurrences > show_counter:
+        print(
+            system._notice(
+                "(To increase the number of OOM instances displayed, use the -s flag)"
+            )
         )
-    )
-    print()
-    print(system._header("Displaying {} OOM instances:".format(show_counter)))
-    print()
+        print()
+        print(system._header("Displaying {} OOM instances:".format(show_counter)))
 
     # Handle the reverse flag and slice the OOM instances based on the show_counter
     normal_or_reversed = -1 if reverse else 1
     show_instances = oom_instances[::normal_or_reversed][:show_counter]
 
     # Display OOM instances based on the show_counter and reverse (if provided)
+    print()
     for instance in show_instances:
-        print("OOM Instance {}:".format(instance["instance_number"]))
-        print("  Processes:")
-        for process in instance["processes"]:
-            print(
-                "    PID: {}, RSS: {} MB, Name: {}".format(
-                    process["pid"], process["rss"], process["name"]
-                )
-            )
-        processes_killed = instance.get("killed") if instance.get("killed") else []
-        print("  Killed Processes: {}".format(",".join(processes_killed)))
-        print()
-        print()
+        analyzer.print_pretty_oom_instance(instance)
 
     return sys.exit(0)
 
