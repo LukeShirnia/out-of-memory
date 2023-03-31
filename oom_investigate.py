@@ -6,7 +6,7 @@
 # To Do:
 # - Handle random log file issues (see old script)
 # - Fix start and end time on linutmint
-# - Check script gets multiple killed service for a single oom instance
+# - Check script gets multiple killed service for a single oom incident
 # - add JournalCTL and DMESG
 # - Add total of services killed
 # - reduce memory footprint if possible
@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import datetime
 import errno
+import fnmatch
 import gzip
 import os
 import re
@@ -65,7 +66,7 @@ class Printer(object):
     providing the common functions such as output formatting.
     """
 
-    horizontal_line = "-" * 40
+    horizontal_line = "_" * 40
 
     WHITE = "\033[1m"
     GREEN = "\033[1;32m"
@@ -88,7 +89,7 @@ class Printer(object):
 
     @property
     def spacer(self):
-        return self.CYAN + self.horizontal_line + self.RESET
+        return self.WHITE + self.horizontal_line + self.RESET
 
     def _header(self, msg):
         self._severity = max(self._severity, self.INFO)
@@ -282,6 +283,22 @@ class System(Printer):
         if self.log_files:
             self.log_to_use = self.log_files[0]
 
+    def search_log_dir(self, log_file):
+        """
+        This function finds all log files in the directory of
+        default log file (or specified log file)
+        """
+        log_directory = os.path.dirname(log_file)
+        log_file_pattern = os.path.basename(log_file) + "*"
+
+        log_files = [
+            os.path.join(root, name)
+            for root, _, files in os.walk(log_directory)
+            for name in files
+            if fnmatch.fnmatch(name, log_file_pattern)
+        ]
+        return sorted(log_files)
+
     def get_ram_info(self):
         try:
             mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
@@ -320,8 +337,9 @@ class System(Printer):
 class OOMAnalyzer(Printer):
     """Class to analyze OOM logs"""
 
-    def __init__(self, log_file, quick=False):
-        self.log_file = log_file
+    def __init__(self, system):
+        self.system = system
+        self.log_file = self.system.log_to_use
         self.oom_instances = []
         self.current_instance = None
         self.rss_column = 7
@@ -339,13 +357,13 @@ class OOMAnalyzer(Printer):
                 if self.log_start_time is None:
                     self.log_start_time = self.extract_timestamp(line)
 
-                # Start of a new OOM instance
+                # Start of a new OOM incident
                 if self.is_oom_start(line):
                     line = self.strip_brackets_pid(line)
                     self.oom_counter += 1
                     timestamp = self.extract_timestamp(line)
                     self.rss_column = line.split().index("rss") + 1
-                    # If we've already started an OOM instance, add it to the list adn start a new
+                    # If we've already started an OOM incident, add it to the list adn start a new
                     if self.current_instance:
                         self.oom_instances.append(self.current_instance)
                         found_killed = False
@@ -354,12 +372,12 @@ class OOMAnalyzer(Printer):
                         "processes": [],
                         "killed": [],
                         "start_time": timestamp,
-                        "instance_number": self.oom_counter,
+                        "incident_number": self.oom_counter,
                     }
-                # Processing the new OOM instance
+                # Processing the new OOM incident
                 elif (
                     # Once we've found a killed process, we don't care about this until the next
-                    # OOM instance
+                    # OOM incident
                     not found_killed
                     and not self.is_killed_process(line)
                     and self.is_process_line(line)
@@ -370,12 +388,12 @@ class OOMAnalyzer(Printer):
                     try:
                         processed_line = self.parse_process_line(line)
                         self.current_instance["processes"].append(processed_line)
-                        # Get a running total for each OOM instance
+                        # Get a running total for each OOM incident
                         self.current_instance["total_mb"] += processed_line["rss"]
                     except ValueError:
                         # Debug: Add a "print(line)"" here if you wish know which lines are skipped
                         continue
-                # Find killed services for this OOM instance
+                # Find killed services for this OOM incident
                 elif self.is_killed_process(line) and self.current_instance is not None:
                     found_killed = True
                     self.current_instance["killed"].append(
@@ -386,7 +404,7 @@ class OOMAnalyzer(Printer):
         if self.log_end_time is None:
             self.log_end_time = self.extract_timestamp(last_line)
 
-        # Add the last OOM instance to the list
+        # Add the last OOM incident to the list
         if self.current_instance:
             self.oom_instances.append(self.current_instance)
 
@@ -396,7 +414,7 @@ class OOMAnalyzer(Printer):
         return log_line.replace("[", "").replace("]", "")
 
     def is_oom_start(self, line):
-        """Check if the line is the start of a new OOM instance"""
+        """Check if the line is the start of a new OOM incident"""
         return "[ pid ]" in line
 
     def is_process_line(self, line):
@@ -455,23 +473,26 @@ class OOMAnalyzer(Printer):
                 count[process] = 1
         return sorted(result.items(), key=lambda x: x[1], reverse=True), count
 
-    def quick_check(self, log_file):
-        """Check how many oom instances a log has"""
-        count = 0
-        with open_file(log_file) as f:
-            for line in f:
-                if self.is_oom_start(line):
-                    count += 1
-        oom = self._critical(str(count))
-        print(self._header("File {}: {} OOM instances").format(log_file, oom))
-        return count
+    def quick_check(self, all=False):
+        """Check how many oom incidents a log (or all logs) have...quickly"""
+        log_list = self.system.search_log_dir(self.log_file) if all else [self.log_file]
+
+        all_logs = {}
+        for log in log_list:
+            count = 0
+            with open_file(log) as f:
+                for line in f:
+                    if self.is_oom_start(line):
+                        count += 1
+            all_logs[log] = count
+        return all_logs
 
     def print_pretty_oom_instance(self, oom_instance):
-        """Method to print the OOM instance in a pretty format"""
+        """Method to print the OOM incident in a pretty format"""
         # Print general overview
         print(
-            self._warning("OOM Instance Number: ")
-            + self._notice(str(oom_instance["instance_number"]))
+            self._warning("OOM Incident: ")
+            + self._notice(str(oom_instance["incident_number"]))
         )
         print(
             self._header("Start Time: ")
@@ -517,7 +538,7 @@ class OOMAnalyzer(Printer):
         print()
 
     def print_pretty_log_info(self):
-        """Method to print the OOM instances in a pretty format"""
+        """Method to print the OOM incident in a pretty format"""
         print(
             self._header("Log Start Time: ")
             + self._notice(self.log_start_time.strftime("%a %b %d %X"))
@@ -532,8 +553,8 @@ class OOMAnalyzer(Printer):
 def run(system, options):
     show_counter, reverse, quick = options.show_counter, options.reverse, options.quick
 
-    # Parse the log file and extract OOM instances
-    analyzer = OOMAnalyzer(system.log_to_use)
+    # Parse the log file and extract OOM incidents
+    analyzer = OOMAnalyzer(system)
     oom_instances = analyzer.parse_log()
 
     # Print system and log overview
@@ -542,20 +563,27 @@ def run(system, options):
 
     # Quick check
     if quick:
+        all_results = analyzer.quick_check(all=True)
         print(system.spacer)
         print()
         print(system._warning("Performing a quick check..."))
-        analyzer.quick_check(system.log_to_use)
+        for log, count in all_results.items():
+            print(
+                system._header("File {}: {} OOM incidents").format(
+                    log, system._critical(str(count))
+                )
+            )
         print()
         print(system.spacer)
         print()
+
         return sys.exit(0)
 
-    # Exit early if no OOM instances were found
+    # Exit early if no OOM incidents were found
     if len(oom_instances) == 0:
         print(
             system._ok(
-                "No OOM instances found! The file {} has no OOM instances.".format(
+                "No OOM incidents found! The file {} has no OOM incidents.".format(
                     system.log_to_use
                 )
             )
@@ -563,50 +591,82 @@ def run(system, options):
         print()
         return sys.exit(0)
 
-    # Display OOM Overview
-    print(system.spacer)
-    print()
-    print(system._critical("######## OOM WARNING ########"))
-    print()
-    oom_occurrences = len(oom_instances)
-    print(
-        system._header("This device has run out of memory ")
-        + system._critical(str(oom_occurrences))
-        + system._header(" times in this log file.")
-    )
-
-    # Handle the reverse flag and slice the OOM instances based on the show_counter
+    # Handle the reverse flag and slice the OOM incidents based on the show_counter
     normal_or_reversed = -1 if reverse else 1
     show_instances = oom_instances[::normal_or_reversed][:show_counter]
     largest_incident = max(oom_instances, key=lambda d: d["total_mb"])
 
-    # Only display this message if there are more oom instances than the show_counter
-    if oom_occurrences > show_counter:
-        print(
-            system._notice(
-                "(To increase the number of OOM instances displayed, use the -s flag)"
-            )
+    # OOM Overview
+    print(system.spacer)
+    print()
+    print()
+    print(
+        system._critical(
+            "WARNING: This device has run out of memory at least once in this log file."
         )
-        # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
-        # display it.
-        if largest_incident["instance_number"] not in list(
-            [i["instance_number"] for i in show_instances]
-        ):
-            print()
-            print(system.spacer)
-            print()
-            print(system._critical("Largest Incident!"))
-            print(system._header("The largest OOM incident in this log file was:"))
-            print()
-            analyzer.print_pretty_oom_instance(largest_incident)
-            print(system.spacer)
-        print()
-        print(system._header("Displaying {} OOM instances:".format(show_counter)))
+    )
+    print()
+    oom_occurrences = len(oom_instances)
+    print(system.spacer)
+    print()
+    print(system._header("      Incident Overview"))
+    print(system.spacer)
+    print()
+    print(system._header("OOM Incidents: ") + system._critical(str(oom_occurrences)))
+    print(
+        "Highest OOM Incident: "
+        + system._warning("Incident Number " + str(largest_incident["incident_number"]))
+    )
+    print(
+        "Memory Used In Incident: "
+        + system._warning(str(largest_incident["total_mb"]) + " MB")
+    )
+    print(system.spacer)
 
-    # Display OOM instances based on the show_counter and reverse (if provided)
+    # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
+    # display it.
+    if largest_incident["incident_number"] not in list(
+        [i["incident_number"] for i in show_instances]
+    ):
+        print()
+        print(system.spacer)
+        print()
+        print(system._critical("      Largest Incident"))
+        print(system.spacer)
+        print()
+        print(system._header("The largest OOM incident in this log file was:"))
+        print()
+        analyzer.print_pretty_oom_instance(largest_incident)
+        print(system.spacer)
+
+    # print()
+    # print(system.spacer)
+    print()
+
+    print(system._header("         OOM Incidents"))
+    print(system.spacer)
+    print()
+    print("Displaying {} OOM incidents:".format(show_counter))
+
+    # Display OOM incidents based on the show_counter and reverse (if provided)
     print()
     for instance in show_instances:
         analyzer.print_pretty_oom_instance(instance)
+
+    print(system.spacer)
+    print()
+
+    # Only display this message if there are more oom incidents than the show_counter
+    if oom_occurrences > show_counter:
+        print()
+        print(
+            system._warning(
+                "(To increase the number of OOM incidents displayed, use the -s flag)"
+            )
+        )
+        print()
+
+    print()
 
     return sys.exit(0)
 
@@ -658,7 +718,7 @@ def main():
         type=int,
         metavar="Show",
         default=5,
-        help="Override the default number of OOM instances to show",
+        help="Override the default number of OOM incidents to show",
     )
     parser.add_option(
         "-r",
@@ -666,8 +726,8 @@ def main():
         dest="reverse",
         default=False,
         action="store_true",
-        help="Show the most recent OOM instances first. "
-        "By default we show the fist OOM instances found in the file, "
+        help="Show the most recent OOM incidents first. "
+        "By default we show the fist OOM incidents found in the file, "
         "which are located at the beginning of the file.",
     )
     parser.add_option(
