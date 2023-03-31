@@ -10,7 +10,7 @@
 # - add JournalCTL and DMESG
 # - Add total of services killed
 # - reduce memory footprint if possible
-# - always show highest ram consuming incident
+# - Add --quick options
 ####
 from __future__ import print_function
 
@@ -65,6 +65,8 @@ class Printer(object):
     providing the common functions such as output formatting.
     """
 
+    horizontal_line = "-" * 40
+
     WHITE = "\033[1m"
     GREEN = "\033[1;32m"
     CYAN = "\033[0;96m"
@@ -83,6 +85,10 @@ class Printer(object):
     _lines = []
 
     HEADER = None
+
+    @property
+    def spacer(self):
+        return self.CYAN + self.horizontal_line + self.RESET
 
     def _header(self, msg):
         self._severity = max(self._severity, self.INFO)
@@ -124,18 +130,13 @@ def main_header():
     Disclaimer and Script Header
     """
     colours = Printer()
-    horizontal_line = "-" * 40
     analyzer_name = "Out Of Memory Analyzer"
     current_year = datetime.datetime.now().year
     author_name = "LukeShirnia"
     disclaimer_text = "If the system OOMs too viciously, there may be nothing logged!"
     warning_text = "Do NOT take this script as FACT, ALWAYS investigate further."
 
-    print(
-        "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
-            colours=colours, horizontal_line=horizontal_line
-        )
-    )
+    print(colours.spacer)
     print("      _____ _____ _____ ")
     print("     |     |     |     |")
     print("     |  |  |  |  | | | |")
@@ -159,11 +160,7 @@ def main_header():
             warning_text=warning_text, colours=colours
         )
     )
-    print(
-        "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
-            colours=colours, horizontal_line=horizontal_line
-        )
-    )
+    print(colours.spacer)
 
 
 class System(Printer):
@@ -323,7 +320,7 @@ class System(Printer):
 class OOMAnalyzer(Printer):
     """Class to analyze OOM logs"""
 
-    def __init__(self, log_file):
+    def __init__(self, log_file, quick=False):
         self.log_file = log_file
         self.oom_instances = []
         self.current_instance = None
@@ -458,11 +455,22 @@ class OOMAnalyzer(Printer):
                 count[process] = 1
         return sorted(result.items(), key=lambda x: x[1], reverse=True), count
 
+    def quick_check(self, log_file):
+        """Check how many oom instances a log has"""
+        count = 0
+        with open_file(log_file) as f:
+            for line in f:
+                if self.is_oom_start(line):
+                    count += 1
+        oom = self._critical(str(count))
+        print(self._header("File {}: {} OOM instances").format(log_file, oom))
+        return count
+
     def print_pretty_oom_instance(self, oom_instance):
         """Method to print the OOM instance in a pretty format"""
         # Print general overview
         print(
-            self._header("OOM Instance Number: ")
+            self._warning("OOM Instance Number: ")
             + self._notice(str(oom_instance["instance_number"]))
         )
         print(
@@ -521,12 +529,27 @@ class OOMAnalyzer(Printer):
         print()
 
 
-def run(system, show_counter, reverse):
+def run(system, options):
+    show_counter, reverse, quick = options.show_counter, options.reverse, options.quick
+
+    # Parse the log file and extract OOM instances
     analyzer = OOMAnalyzer(system.log_to_use)
     oom_instances = analyzer.parse_log()
 
+    # Print system and log overview
     system.print_pretty()
     analyzer.print_pretty_log_info()
+
+    # Quick check
+    if quick:
+        print(system.spacer)
+        print()
+        print(system._warning("Performing a quick check..."))
+        analyzer.quick_check(system.log_to_use)
+        print()
+        print(system.spacer)
+        print()
+        return sys.exit(0)
 
     # Exit early if no OOM instances were found
     if len(oom_instances) == 0:
@@ -541,11 +564,7 @@ def run(system, show_counter, reverse):
         return sys.exit(0)
 
     # Display OOM Overview
-    print(
-        "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
-            colours=system, horizontal_line="-" * 40
-        )
-    )
+    print(system.spacer)
     print()
     print(system._critical("######## OOM WARNING ########"))
     print()
@@ -573,23 +592,14 @@ def run(system, show_counter, reverse):
         if largest_incident["instance_number"] not in list(
             [i["instance_number"] for i in show_instances]
         ):
-            horizontal_line = "-" * 40
             print()
-            print(
-                "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
-                    colours=system, horizontal_line=horizontal_line
-                )
-            )
+            print(system.spacer)
             print()
             print(system._critical("Largest Incident!"))
             print(system._header("The largest OOM incident in this log file was:"))
             print()
             analyzer.print_pretty_oom_instance(largest_incident)
-            print(
-                "{colours.CYAN}{horizontal_line}{colours.RESET}".format(
-                    colours=system, horizontal_line=horizontal_line
-                )
-            )
+            print(system.spacer)
         print()
         print(system._header("Displaying {} OOM instances:".format(show_counter)))
 
@@ -599,6 +609,36 @@ def run(system, show_counter, reverse):
         analyzer.print_pretty_oom_instance(instance)
 
     return sys.exit(0)
+
+
+def validate_options(options, system):
+    """Function to validate the options provided by the user"""
+    # Instantiate the System class and validate the default log file
+    try:
+        system.log_to_use = system.log_files[0]
+    except IndexError:
+        # Only return an error if the user has not specified a log file
+        if not options.file:
+            print(
+                "Error: Unable to find log file for this Operating System. "
+                "Please specify a log file with the -f option"
+            )
+            return sys.exit(1)
+
+    # Check if the user has specified a valid log file and it is not too large
+    if options.file:
+        if not os.path.isfile(options.file):
+            print("File {} does not exist".format(options.file))
+            return sys.exit(1)
+        else:
+            system.log_to_use = options.file
+            if os.path.getsize(options.file) > 314572800 and not options.override:
+                print(
+                    "File is larger than 300MB, please specify the -o option to override"
+                )
+                return sys.exit(1)
+
+    return
 
 
 def main():
@@ -631,6 +671,14 @@ def main():
         "which are located at the beginning of the file.",
     )
     parser.add_option(
+        "-q",
+        "--quick",
+        dest="quick",
+        default=False,
+        action="store_true",
+        help="Display the scripts version number",
+    )
+    parser.add_option(
         "-V",
         "--version",
         dest="version",
@@ -642,39 +690,18 @@ def main():
 
     # Show the version number and exit
     if options.version:
-        print("OOM Analyzer Version: %s" % __version__)
+        print("OOM Analyzer Version: {}".format(__version__))
         return sys.exit(0)
+
+    system = System()
+
+    # Validate the options provided by the user and the log file
+    validate_options(options, system)
 
     # Print the script header
     main_header()
 
-    # Instantiate the System class and validate the default log file
-    system = System()
-    try:
-        system.log_to_use = system.log_files[0]
-    except IndexError:
-        # Only return an error if the user has not specified a log file
-        if not options.file:
-            print(
-                "Error: Unable to find log file for this Operating System. "
-                "Please specify a log file with the -f option"
-            )
-            return sys.exit(1)
-
-    # Check if the user has specified a valid log file and it is not too large
-    if options.file:
-        if not os.path.isfile(options.file):
-            print("File {} does not exist".format(options.file))
-            return sys.exit(1)
-        else:
-            system.log_to_use = options.file
-            if os.path.getsize(options.file) > 314572800 and not options.override:
-                print(
-                    "File is larger than 300MB, please specify the -o option to override"
-                )
-                return sys.exit(1)
-
-    return run(system, options.show_counter, options.reverse)
+    return run(system, options)
 
 
 if __name__ == "__main__":
