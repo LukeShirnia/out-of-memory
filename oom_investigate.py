@@ -6,11 +6,9 @@
 # To Do:
 # - Handle random log file issues (see old script)
 # - Fix start and end time on linutmint
-# - Check script gets multiple killed service for a single oom incident
 # - add JournalCTL and DMESG
 # - Add total of services killed
 # - reduce memory footprint if possible
-# - Add --quick options
 ####
 from __future__ import print_function
 
@@ -20,6 +18,7 @@ import fnmatch
 import gzip
 import os
 import re
+import subprocess
 import sys
 import warnings
 from optparse import OptionParser
@@ -172,8 +171,11 @@ class System(Printer):
         self.distro, self.version, _ = self.get_distro_info()
         self.log_files = []
         self.log_to_use = None
+        self.journalctl = False
         self.ram = self.get_ram_info()
         self.find_system_logs()
+        self.use_journalctl = False
+        self.use_dmesg = False
 
     def __str__(self):
         return self._system
@@ -283,6 +285,14 @@ class System(Printer):
         if self.log_files:
             self.log_to_use = self.log_files[0]
 
+    @property
+    def default_system_log(self):
+        # Only default to journalctl if there is only one log file and it is journald config file
+        if len(self.log_files) == 1 and "journald" in self.log_files[0]:
+            self.journalctl = True
+            return "journald"
+        return self.log_files[0]
+
     def search_log_dir(self, log_file):
         """
         This function finds all log files in the directory of
@@ -321,10 +331,9 @@ class System(Printer):
             self._header("RAM: ") + self._notice("{} GiB".format(self.ram))
         )
         self._lines += [
-            self._header("Default System Log: ") + self._notice(self.log_files[0])
+            self._header("Default System Log: ") + self._notice(self.default_system_log)
         ]
         self._lines.append("")
-        self._lines.append(self._header("Using Log: ") + self._ok(self.log_to_use))
 
     def print_pretty(self):
         self.populate_lines()
@@ -346,59 +355,124 @@ class OOMAnalyzer(Printer):
         self.log_start_time = None
         self.log_end_time = None
         self.oom_counter = 0
+        self._get_log_source = None
 
-    def parse_log(self):
-        last_line = None
+    def get_log_source(self, log_file=None, journalctl=None, dmesg=None):
+        """Method to get the log source, allowing for manual override"""
+        if self._get_log_source:
+            return self._get_log_source
+
+        log_sources = [
+            ("file", log_file, self.log_file),
+            ("journalctl", journalctl, self.system.use_journalctl),
+            ("dmesg", dmesg, self.system.use_dmesg),
+        ]
+
+        chosen_source = None
+
+        for source, manual, attribute in log_sources:
+            if manual is True:
+                if chosen_source is not None:
+                    print("Please specify only one log source")
+                    sys.exit(1)
+                chosen_source = source
+            elif manual is None and attribute and chosen_source is None:
+                # Let's use journalctl if the log file is a journald config file
+                if source == "file" and "journald" in self.log_file:
+                    chosen_source = "journalctl"
+                else:
+                    chosen_source = source
+
+        self._get_log_source = chosen_source or "file"
+        return self._get_log_source
+
+    def log_lines(self):
+        """Method to return log lines from different sources"""
+        source = self.get_log_source()
+        # If log file is specified, read from that file
+        if source == "file":
+            with open(self.log_file, "r") as file:
+                for line in file:
+                    yield line.strip()
+        # If system.use_journalctl is True, read from journalctl
+        elif source == "journalctl":
+            cmd = "journalctl -o short-iso --no-pager --boot=-0 -k"
+            p = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            for line in p.stdout:
+                yield line.decode("utf-8")
+        # If system.dmsg is True, read from dmesg
+        elif source == "dmesg":
+            cmd = "dmesg"
+            p = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            for line in p.stdout:
+                yield line.decode("utf-8")
+
+    def analyze(self):
+        """Method to parse the log and analyze OOM incidents"""
         found_killed = False
-        with open_file(self.log_file) as f:
-            for line in f:
-                last_line = line  # Used to extract the end time of the log
-                # Extract the start timestamp from the line
-                if self.log_start_time is None:
-                    self.log_start_time = self.extract_timestamp(line)
 
-                # Start of a new OOM incident
-                if self.is_oom_start(line):
-                    line = self.strip_brackets_pid(line)
-                    self.oom_counter += 1
-                    timestamp = self.extract_timestamp(line)
-                    self.rss_column = line.split().index("rss") + 1
-                    # If we've already started an OOM incident, add it to the list adn start a new
-                    if self.current_instance:
-                        self.oom_instances.append(self.current_instance)
-                        found_killed = False
-                    self.current_instance = {
-                        "total_mb": 0,
-                        "processes": [],
-                        "killed": [],
-                        "start_time": timestamp,
-                        "incident_number": self.oom_counter,
-                    }
-                # Processing the new OOM incident
-                elif (
-                    # Once we've found a killed process, we don't care about this until the next
-                    # OOM incident
-                    not found_killed
-                    and not self.is_killed_process(line)
-                    and self.is_process_line(line)
-                    and self.current_instance is not None
-                ):
-                    # Sometimes the log line isn't complete which might be an issue with the kernel
-                    # logging during the incident. If we can't parse the line, lets skip it
-                    try:
-                        processed_line = self.parse_process_line(line)
-                        self.current_instance["processes"].append(processed_line)
-                        # Get a running total for each OOM incident
-                        self.current_instance["total_mb"] += processed_line["rss"]
-                    except ValueError:
-                        # Debug: Add a "print(line)"" here if you wish know which lines are skipped
-                        continue
-                # Find killed services for this OOM incident
-                elif self.is_killed_process(line) and self.current_instance is not None:
-                    found_killed = True
-                    self.current_instance["killed"].append(
-                        self.parse_killed_process_line(line)
-                    )
+        # Prevent errors if log file is empty
+        log_generator = self.log_lines()
+        try:
+            first_line = next(log_generator)
+        except StopIteration:
+            return self.oom_instances
+
+        last_line = first_line
+        # Extract the start timestamp from the line
+        if self.log_start_time is None:
+            self.log_start_time = self.extract_timestamp(first_line)
+
+        for line in self.log_lines():
+            # Used to extract the end time of the log. Only assign if line is not empty
+            if line.strip():
+                last_line = line
+            # Start of a new OOM incident
+            if self.is_oom_start(line):
+                line = self.strip_brackets_pid(line)
+                self.oom_counter += 1
+                timestamp = self.extract_timestamp(line)
+                self.rss_column = line.split().index("rss") + 1
+                # If we've already started an OOM incident, add it to the list adn start a new
+                if self.current_instance:
+                    self.oom_instances.append(self.current_instance)
+                    found_killed = False
+                self.current_instance = {
+                    "total_mb": 0,
+                    "processes": [],
+                    "killed": [],
+                    "start_time": timestamp,
+                    "incident_number": self.oom_counter,
+                }
+            # Processing the new OOM incident
+            elif (
+                # Once we've found a killed process, we don't care about this until the next
+                # OOM incident
+                not found_killed
+                and not self.is_killed_process(line)
+                and self.is_process_line(line)
+                and self.current_instance is not None
+            ):
+                # Sometimes the log line isn't complete which might be an issue with the kernel
+                # logging during the incident. If we can't parse the line, lets skip it
+                try:
+                    processed_line = self.parse_process_line(line)
+                    self.current_instance["processes"].append(processed_line)
+                    # Get a running total for each OOM incident
+                    self.current_instance["total_mb"] += processed_line["rss"]
+                except ValueError:
+                    # Debug: Add a "print(line)"" here if you wish know which lines are skipped
+                    continue
+            # Find killed services for this OOM incident
+            elif self.is_killed_process(line) and self.current_instance is not None:
+                found_killed = True
+                self.current_instance["killed"].append(
+                    self.parse_killed_process_line(line)
+                )
 
         # Extract the end timestamp from the last line
         if self.log_end_time is None:
@@ -444,19 +518,33 @@ class OOMAnalyzer(Printer):
         return None
 
     def extract_timestamp(self, line):
-        """Method to extract the timestamp from the line"""
-        # dmesg-style date: [Mon Feb  1 09:08:13 2021]
-        if line[0] == "[":
-            raw_timestamp = line[1:].split("]")[0]
-            timestamp_object = datetime.datetime.strptime(raw_timestamp, "%c")
-        # syslog-style date format.
+        syslog_pattern = r"(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
+        dmesg_pattern = r"\[\s*(\d+\.\d+)\]"
+        journalctl_pattern = (
+            r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{6})?(?:\+|-)\d{4})"
+        )
+
+        syslog_match = re.search(syslog_pattern, line)
+        dmesg_match = re.search(dmesg_pattern, line)
+        journalctl_match = re.search(journalctl_pattern, line)
+
+        if syslog_match:
+            timestamp_str = syslog_match.group(1)
+            dt = datetime.datetime.strptime(timestamp_str, "%b %d %H:%M:%S")
+            return dt
+        elif dmesg_match:
+            timestamp_str = dmesg_match.group(1)
+            dt = datetime.datetime.fromtimestamp(float(timestamp_str))
+            return dt
+        elif journalctl_match:
+            timestamp_str = journalctl_match.group(1)
+            try:
+                dt = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+            except ValueError:
+                dt = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
+            return dt
         else:
-            raw_timestamp_list = line.split()[0:3]
-            raw_timestamp = " ".join(raw_timestamp_list)
-            timestamp_object = datetime.datetime.strptime(
-                raw_timestamp, "%b %d %H:%M:%S"
-            )
-        return timestamp_object
+            return None
 
     def sorted_results(self, oom_processes_list):
         """Method to sort the OOM processes by RSS"""
@@ -539,6 +627,21 @@ class OOMAnalyzer(Printer):
 
     def print_pretty_log_info(self):
         """Method to print the OOM incident in a pretty format"""
+        source = self.get_log_source()
+        if source == "journalctl":
+            print(self._header("Using Journalctl: ") + self._ok("True"))
+        elif source == "dmesg":
+            print(self._header("Using Dmesg: ") + self._ok("True"))
+        else:
+            print(self._header("Using Log File: ") + self._ok(self.log_file))
+
+        # Exit early if log file is empty
+        if not self.log_start_time and not self.log_end_time:
+            print()
+            print(self._warning("Log file appears to be empty"))
+            print()
+            sys.exit(0)
+
         print(
             self._header("Log Start Time: ")
             + self._notice(self.log_start_time.strftime("%a %b %d %X"))
@@ -551,11 +654,15 @@ class OOMAnalyzer(Printer):
 
 
 def run(system, options):
-    show_counter, reverse, quick = options.show_counter, options.reverse, options.quick
+    show_counter, reverse, quick = (
+        options.show_counter,
+        options.reverse,
+        options.quick,
+    )
 
     # Parse the log file and extract OOM incidents
     analyzer = OOMAnalyzer(system)
-    oom_instances = analyzer.parse_log()
+    oom_instances = analyzer.analyze()
 
     # Print system and log overview
     system.print_pretty()
@@ -581,13 +688,19 @@ def run(system, options):
 
     # Exit early if no OOM incidents were found
     if len(oom_instances) == 0:
-        print(
-            system._ok(
-                "No OOM incidents found! The file {} has no OOM incidents.".format(
-                    system.log_to_use
-                )
+        source = analyzer.get_log_source()
+        if source == "journalctl":
+            msg = "No OOM incidents found! Journalctl has no OOM incidents."
+        elif source == "dmesg":
+            msg = "No OOM incidents found! Dmesg has no OOM incidents."
+        else:
+            msg = (
+                "No OOM incidents found! "
+                + analyzer.log_file
+                + " has no OOM incidents."
             )
-        )
+
+        print(system._ok(msg))
         print()
         return sys.exit(0)
 
@@ -673,6 +786,10 @@ def run(system, options):
 
 def validate_options(options, system):
     """Function to validate the options provided by the user"""
+    if options.journalctl and options.file:
+        print("Error: Please specify either a log file or journalctl, not both")
+        return sys.exit(1)
+
     # Instantiate the System class and validate the default log file
     try:
         system.log_to_use = system.log_files[0]
@@ -684,6 +801,10 @@ def validate_options(options, system):
                 "Please specify a log file with the -f option"
             )
             return sys.exit(1)
+
+    # Use journalctl if option is set. Journalctl will also be used if the system default is set
+    # to journalctl.
+    system.use_journalctl = options.journalctl
 
     # Check if the user has specified a valid log file and it is not too large
     if options.file:
@@ -729,6 +850,15 @@ def main():
         help="Show the most recent OOM incidents first. "
         "By default we show the fist OOM incidents found in the file, "
         "which are located at the beginning of the file.",
+    )
+    parser.add_option(
+        "-j",
+        "--journalctl",
+        dest="journalctl",
+        default=False,
+        action="store_true",
+        help="Investigate possible oom instances in the journalctl log file. "
+        "The default is to use the log file.",
     )
     parser.add_option(
         "-q",
