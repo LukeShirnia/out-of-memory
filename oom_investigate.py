@@ -386,12 +386,12 @@ class OOMAnalyzer(Printer):
         self._get_log_source = chosen_source or "file"
         return self._get_log_source
 
-    def log_lines(self):
+    def log_lines(self, source, log_file=None):
         """Method to return log lines from different sources"""
-        source = self.get_log_source()
         # If log file is specified, read from that file
         if source == "file":
-            with open(self.log_file, "r") as file:
+            log_file_to_read = log_file or self.log_file
+            with open_file(log_file_to_read) as file:
                 for line in file:
                     yield line.strip()
         # If system.use_journalctl is True, read from journalctl
@@ -416,7 +416,7 @@ class OOMAnalyzer(Printer):
         found_killed = False
 
         # Prevent errors if log file is empty
-        log_generator = self.log_lines()
+        log_generator = self.log_lines(self.get_log_source())
         try:
             first_line = next(log_generator)
         except StopIteration:
@@ -427,7 +427,7 @@ class OOMAnalyzer(Printer):
         if self.log_start_time is None:
             self.log_start_time = self.extract_timestamp(first_line)
 
-        for line in self.log_lines():
+        for line in log_generator:
             # Used to extract the end time of the log. Only assign if line is not empty
             if line.strip():
                 last_line = line
@@ -561,17 +561,33 @@ class OOMAnalyzer(Printer):
                 count[process] = 1
         return sorted(result.items(), key=lambda x: x[1], reverse=True), count
 
-    def quick_check(self, all=False):
+    def quick_check(self):
         """Check how many oom incidents a log (or all logs) have...quickly"""
-        log_list = self.system.search_log_dir(self.log_file) if all else [self.log_file]
+        source = self.get_log_source()
+
+        all_log_files = []
+        if source in ["journalctl", "dmesg"]:
+            all_log_files.append((source, None))
+        else:
+            all_log_files.extend(
+                ("file", log) for log in self.system.search_log_dir(self.log_file)
+            )
 
         all_logs = {}
-        for log in log_list:
+        for src, log in all_log_files:
             count = 0
-            with open_file(log) as f:
-                for line in f:
-                    if self.is_oom_start(line):
-                        count += 1
+            generator = self.log_lines(src, log_file=log)
+
+            # Prevent errors if log file is empty
+            try:
+                _ = next(generator)
+            except StopIteration:
+                all_logs[log] = count
+                continue
+
+            for line in generator:
+                if self.is_oom_start(line):
+                    count += 1
             all_logs[log] = count
         return all_logs
 
@@ -670,7 +686,7 @@ def run(system, options):
 
     # Quick check
     if quick:
-        all_results = analyzer.quick_check(all=True)
+        all_results = analyzer.quick_check()
         print(system.spacer)
         print()
         print(system._warning("Performing a quick check..."))
