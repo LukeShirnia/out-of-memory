@@ -413,76 +413,70 @@ class OOMAnalyzer(Printer):
 
     def analyze(self):
         """Method to parse the log and analyze OOM incidents"""
-        found_killed = False
 
         # Prevent errors if log file is empty
         log_generator = self.log_lines(self.get_log_source())
         try:
             first_line = next(log_generator)
         except StopIteration:
-            return self.oom_instances
+            return
 
-        last_line = first_line
+        state = {"last_line": first_line, "found_killed": False}
+
         # Extract the start timestamp from the line
         if self.log_start_time is None:
             self.log_start_time = self.extract_timestamp(first_line)
 
-        for line in log_generator:
-            # Used to extract the end time of the log. Only assign if line is not empty
-            if line.strip():
-                last_line = line
-            # Start of a new OOM incident
-            if self.is_oom_start(line):
-                line = self.strip_brackets_pid(line)
-                self.oom_counter += 1
-                timestamp = self.extract_timestamp(line)
-                self.rss_column = line.split().index("rss") + 1
-                # If we've already started an OOM incident, add it to the list adn start a new
-                if self.current_instance:
-                    self.oom_instances.append(self.current_instance)
-                    found_killed = False
-                self.current_instance = {
-                    "total_mb": 0,
-                    "processes": [],
-                    "killed": [],
-                    "start_time": timestamp,
-                    "incident_number": self.oom_counter,
-                }
-            # Processing the new OOM incident
-            elif (
-                # Once we've found a killed process, we don't care about this until the next
-                # OOM incident
-                not found_killed
-                and not self.is_killed_process(line)
-                and self.is_process_line(line)
-                and self.current_instance is not None
-            ):
-                # Sometimes the log line isn't complete which might be an issue with the kernel
-                # logging during the incident. If we can't parse the line, lets skip it
-                try:
-                    processed_line = self.parse_process_line(line)
-                    self.current_instance["processes"].append(processed_line)
-                    # Get a running total for each OOM incident
-                    self.current_instance["total_mb"] += processed_line["rss"]
-                except ValueError:
-                    # Debug: Add a "print(line)"" here if you wish know which lines are skipped
-                    continue
-            # Find killed services for this OOM incident
-            elif self.is_killed_process(line) and self.current_instance is not None:
-                found_killed = True
-                self.current_instance["killed"].append(
-                    self.parse_killed_process_line(line)
-                )
+        def generator():
+            nonlocal state
+            for line in log_generator:
+                # Used to extract the end time of the log. Only assign if line is not empty
+                if line.strip():
+                    state["last_line"] = line
+                # Start of a new OOM incident
+                if self.is_oom_start(line):
+                    line = self.strip_brackets_pid(line)
+                    self.oom_counter += 1
+                    timestamp = self.extract_timestamp(line)
+                    self.rss_column = line.split().index("rss") + 1
+                    # If we've already started an OOM incident, yield it and start a new one
+                    if self.current_instance:
+                        yield self.current_instance
+                        state["found_killed"] = False
+                    self.current_instance = {
+                        "total_mb": 0,
+                        "processes": [],
+                        "killed": [],
+                        "start_time": timestamp,
+                        "incident_number": self.oom_counter,
+                    }
+                # Processing the new OOM incident
+                elif (
+                    not state["found_killed"]
+                    and not self.is_killed_process(line)
+                    and self.is_process_line(line)
+                    and self.current_instance is not None
+                ):
+                    try:
+                        processed_line = self.parse_process_line(line)
+                        self.current_instance["processes"].append(processed_line)
+                        self.current_instance["total_mb"] += processed_line["rss"]
+                    except ValueError:
+                        continue
+                elif self.is_killed_process(line) and self.current_instance is not None:
+                    state["found_killed"] = True
+                    self.current_instance["killed"].append(
+                        self.parse_killed_process_line(line)
+                    )
+
+            if self.current_instance:
+                yield self.current_instance
 
         # Extract the end timestamp from the last line
         if self.log_end_time is None:
-            self.log_end_time = self.extract_timestamp(last_line)
+            self.log_end_time = self.extract_timestamp(state["last_line"])
 
-        # Add the last OOM incident to the list
-        if self.current_instance:
-            self.oom_instances.append(self.current_instance)
-
-        return self.oom_instances
+        return generator()
 
     def strip_brackets_pid(self, log_line):
         return log_line.replace("[", "").replace("]", "")
@@ -678,12 +672,9 @@ def run(system, options):
 
     # Parse the log file and extract OOM incidents
     analyzer = OOMAnalyzer(system)
-    oom_instances = analyzer.analyze()
 
     # Print system and log overview
     system.print_pretty()
-    analyzer.print_pretty_log_info()
-
     # Quick check
     if quick:
         all_results = analyzer.quick_check()
@@ -702,8 +693,32 @@ def run(system, options):
 
         return sys.exit(0)
 
+    # Find the largest incident
+    largest_incident = None
+    sliced_oom_instances = []
+    oom_instances = analyzer.analyze()
+
+    # Handle the reverse flag and slice the OOM incidents based on the show_counter
+    if reverse:
+        oom_instances = iter(reversed(list(oom_instances)))
+
+    last_incident = None
+    for oom_instance in oom_instances:
+        # Only obtain the first N incidents for use later
+        last_incident = oom_instance
+        if oom_instance["incident_number"] < show_counter + 1:
+            sliced_oom_instances.append(oom_instance)
+        # Find the largest incident
+        if (
+            largest_incident is None
+            or oom_instance["total_mb"] > largest_incident["total_mb"]
+        ):
+            largest_incident = oom_instance
+
+    total_incidents = last_incident["incident_number"]
+
     # Exit early if no OOM incidents were found
-    if len(oom_instances) == 0:
+    if last_incident is None:
         source = analyzer.get_log_source()
         if source == "journalctl":
             msg = "No OOM incidents found! Journalctl has no OOM incidents."
@@ -720,11 +735,6 @@ def run(system, options):
         print()
         return sys.exit(0)
 
-    # Handle the reverse flag and slice the OOM incidents based on the show_counter
-    normal_or_reversed = -1 if reverse else 1
-    show_instances = oom_instances[::normal_or_reversed][:show_counter]
-    largest_incident = max(oom_instances, key=lambda d: d["total_mb"])
-
     # OOM Overview
     print(system.spacer)
     print()
@@ -735,13 +745,12 @@ def run(system, options):
         )
     )
     print()
-    oom_occurrences = len(oom_instances)
     print(system.spacer)
     print()
     print(system._header("      Incident Overview"))
     print(system.spacer)
     print()
-    print(system._header("OOM Incidents: ") + system._critical(str(oom_occurrences)))
+    print(system._header("OOM Incidents: ") + system._critical(str(total_incidents)))
     print(
         "Highest OOM Incident: "
         + system._warning("Incident Number " + str(largest_incident["incident_number"]))
@@ -755,7 +764,7 @@ def run(system, options):
     # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
     # display it.
     if largest_incident["incident_number"] not in list(
-        [i["incident_number"] for i in show_instances]
+        [i["incident_number"] for i in sliced_oom_instances]
     ):
         print()
         print(system.spacer)
@@ -779,14 +788,14 @@ def run(system, options):
 
     # Display OOM incidents based on the show_counter and reverse (if provided)
     print()
-    for instance in show_instances:
+    for instance in sliced_oom_instances:
         analyzer.print_pretty_oom_instance(instance)
 
     print(system.spacer)
     print()
 
     # Only display this message if there are more oom incidents than the show_counter
-    if oom_occurrences > show_counter:
+    if total_incidents > show_counter:
         print()
         print(
             system._warning(
