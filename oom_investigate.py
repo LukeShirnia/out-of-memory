@@ -836,13 +836,7 @@ def validate_options(options, system):
         if not os.path.isfile(options.file):
             print("File {} does not exist".format(options.file))
             return sys.exit(1)
-        else:
-            system.log_to_use = options.file
-            if os.path.getsize(options.file) > 314572800 and not options.override:
-                print(
-                    "File is larger than 300MB, please specify the -o option to override"
-                )
-                return sys.exit(1)
+        system.log_to_use = options.file
 
     return
 
