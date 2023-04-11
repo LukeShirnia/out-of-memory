@@ -428,7 +428,7 @@ class OOMAnalyzer(Printer):
             self.log_start_time = self.extract_timestamp(first_line)
 
         def generator():
-            nonlocal state
+            current_instance = None
             for line in log_generator:
                 # Used to extract the end time of the log. Only assign if line is not empty
                 if line.strip():
@@ -440,10 +440,10 @@ class OOMAnalyzer(Printer):
                     timestamp = self.extract_timestamp(line)
                     self.rss_column = line.split().index("rss") + 1
                     # If we've already started an OOM incident, yield it and start a new one
-                    if self.current_instance:
-                        yield self.current_instance
+                    if current_instance:
+                        yield current_instance
                         state["found_killed"] = False
-                    self.current_instance = {
+                    current_instance = {
                         "total_mb": 0,
                         "processes": [],
                         "killed": [],
@@ -455,22 +455,22 @@ class OOMAnalyzer(Printer):
                     not state["found_killed"]
                     and not self.is_killed_process(line)
                     and self.is_process_line(line)
-                    and self.current_instance is not None
+                    and current_instance is not None
                 ):
                     try:
                         processed_line = self.parse_process_line(line)
-                        self.current_instance["processes"].append(processed_line)
-                        self.current_instance["total_mb"] += processed_line["rss"]
+                        current_instance["processes"].append(processed_line)
+                        current_instance["total_mb"] += processed_line["rss"]
                     except ValueError:
                         continue
-                elif self.is_killed_process(line) and self.current_instance is not None:
+                elif self.is_killed_process(line) and current_instance is not None:
                     state["found_killed"] = True
-                    self.current_instance["killed"].append(
+                    current_instance["killed"].append(
                         self.parse_killed_process_line(line)
                     )
 
-            if self.current_instance:
-                yield self.current_instance
+            if current_instance:
+                yield current_instance
 
         # Extract the end timestamp from the last line
         if self.log_end_time is None:
@@ -703,7 +703,7 @@ def run(system, options):
         oom_instances = iter(reversed(list(oom_instances)))
 
     last_incident = None
-    for oom_instance in oom_instances:
+    for oom_instance in oom_instances or []:
         # Only obtain the first N incidents for use later
         last_incident = oom_instance
         if oom_instance["incident_number"] < show_counter + 1:
@@ -714,8 +714,6 @@ def run(system, options):
             or oom_instance["total_mb"] > largest_incident["total_mb"]
         ):
             largest_incident = oom_instance
-
-    total_incidents = last_incident["incident_number"]
 
     # Exit early if no OOM incidents were found
     if last_incident is None:
@@ -734,6 +732,8 @@ def run(system, options):
         print(system._ok(msg))
         print()
         return sys.exit(0)
+
+    total_incidents = last_incident["incident_number"]
 
     # OOM Overview
     print(system.spacer)
