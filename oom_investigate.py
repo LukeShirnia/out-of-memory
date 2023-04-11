@@ -4,11 +4,8 @@
 # Source:       https://github.com/LukeShirnia/out-of-memory/
 ####
 # To Do:
-# - Handle random log file issues (see old script)
-# - Fix start and end time on linutmint
-# - add JournalCTL and DMESG
-# - Add total of services killed
-# - reduce memory footprint if possible
+# - Read "pages RAM" from oom incident for precise system RAM at time of incident
+# - Explore adding "What file should we check next" option? (undecided if actually required)
 ####
 from __future__ import print_function
 
@@ -21,6 +18,7 @@ import re
 import subprocess
 import sys
 import warnings
+from collections import defaultdict
 from optparse import OptionParser
 
 warnings.filterwarnings(
@@ -363,9 +361,9 @@ class OOMAnalyzer(Printer):
             return self._get_log_source
 
         log_sources = [
-            ("file", log_file, self.log_file),
-            ("journalctl", journalctl, self.system.use_journalctl),
             ("dmesg", dmesg, self.system.use_dmesg),
+            ("journalctl", journalctl, self.system.use_journalctl),
+            ("file", log_file, self.log_file),
         ]
 
         chosen_source = None
@@ -702,6 +700,7 @@ def run(system, options):
     if reverse:
         oom_instances = iter(reversed(list(oom_instances)))
 
+    killed_services_count = defaultdict(int)
     last_incident = None
     for oom_instance in oom_instances or []:
         # Only obtain the first N incidents for use later
@@ -714,7 +713,15 @@ def run(system, options):
             or oom_instance["total_mb"] > largest_incident["total_mb"]
         ):
             largest_incident = oom_instance
+        # Count killed services
+        for killed_service in oom_instance["killed"]:
+            killed_services_count[killed_service] += 1
 
+    sorted_killed_service_count = sorted(
+        killed_services_count.items(), key=lambda x: x[1], reverse=True
+    )
+
+    analyzer.print_pretty_log_info()
     # Exit early if no OOM incidents were found
     if last_incident is None:
         source = analyzer.get_log_source()
@@ -759,6 +766,15 @@ def run(system, options):
         "Memory Used In Incident: "
         + system._warning(str(largest_incident["total_mb"]) + " MB")
     )
+    print("Killed Services: ")
+    for service, count in sorted_killed_service_count:
+        print(
+            "- "
+            + system._warning(service)
+            + ": killed "
+            + system._critical(str(count))
+            + " times"
+        )
     print(system.spacer)
 
     # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
@@ -811,8 +827,14 @@ def run(system, options):
 
 def validate_options(options, system):
     """Function to validate the options provided by the user"""
-    if options.journalctl and options.file:
-        print("Error: Please specify either a log file or journalctl, not both")
+    # Check if the user has specified more than one option
+    if (
+        sum(x is not False for x in [options.file, options.journalctl, options.dmesg])
+        > 1
+    ):
+        print(
+            "Error: Please specify only a single option; a log file, dmesg or journalctl"
+        )
         return sys.exit(1)
 
     # Instantiate the System class and validate the default log file
@@ -827,11 +849,13 @@ def validate_options(options, system):
             )
             return sys.exit(1)
 
-    # Use journalctl if option is set. Journalctl will also be used if the system default is set
-    # to journalctl.
+    # Use journalctl if option is set. Journalctl will also be used if the system default is
+    # journalctl
     system.use_journalctl = options.journalctl
+    # Use dmesg if option is set. Dmesg will also be used if the system default is dmesg
+    system.use_dmesg = options.dmesg
 
-    # Check if the user has specified a valid log file and it is not too large
+    # Check if the user has specified a valid log file
     if options.file:
         if not os.path.isfile(options.file):
             print("File {} does not exist".format(options.file))
@@ -847,9 +871,11 @@ def main():
         "-f",
         "--file",
         dest="file",
+        default=False,
         type="string",
         metavar="File",
-        help="Specify a log to check",
+        help="Specify a log to check. The default is to use the system default, "
+        "which could also be journalctl.",
     )
     parser.add_option(
         "-s",
@@ -876,8 +902,15 @@ def main():
         dest="journalctl",
         default=False,
         action="store_true",
-        help="Investigate possible oom instances in the journalctl log file. "
-        "The default is to use the log file.",
+        help="Investigate possible oom instances in the journalctl log file. ",
+    )
+    parser.add_option(
+        "-d",
+        "--dmesg",
+        dest="dmesg",
+        default=False,
+        action="store_true",
+        help="Investigate possible oom instances in the dmesg log file. ",
     )
     parser.add_option(
         "-q",
