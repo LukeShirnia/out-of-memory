@@ -9,11 +9,11 @@
 ####
 from __future__ import print_function
 
-import itertools
 import datetime
 import errno
 import fnmatch
 import gzip
+import itertools
 import os
 import re
 import subprocess
@@ -443,7 +443,7 @@ class OOMAnalyzer(Printer):
                     line = self.strip_brackets_pid(line)
                     self.oom_counter += 1
                     timestamp = self.extract_timestamp(line)
-                    self.rss_column = line.split().index("rss") + 1
+                    self.rss_column = line.split().index("rss")
                     # If we've already started an OOM incident, yield it and start a new one
                     if current_instance:
                         current_instance["system_ram"] = (
@@ -502,6 +502,9 @@ class OOMAnalyzer(Printer):
 
     def parse_process_line(self, line):
         """Parse the line and obtain the pid, rss and name of the process"""
+        # When we get the rss column and store it, we've stripped the brackets. So we need to
+        # strip them here too to make sure we get the right column
+        line = self.strip_brackets_pid(line)
         fields = line.split()
         rss = int(fields[self.rss_column])
         rss_mb = rss * 4 // 1024
