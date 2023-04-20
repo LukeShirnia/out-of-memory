@@ -9,6 +9,7 @@
 ####
 from __future__ import print_function
 
+import itertools
 import datetime
 import errno
 import fnmatch
@@ -478,6 +479,9 @@ class OOMAnalyzer(Printer):
                     )
 
             if current_instance:
+                current_instance["system_ram"] = (
+                    self._system_ram if self._system_ram else self.system.ram
+                )
                 yield current_instance
 
         # Extract the end timestamp from the last line
@@ -665,7 +669,7 @@ class OOMAnalyzer(Printer):
             lines.append("  " + self._notice(data_row.rstrip()))
 
         lines.append("")
-        print("\n".join(lines))
+        return lines
 
     def print_pretty_log_info(self):
         """Method to print the OOM incident in a pretty format"""
@@ -696,7 +700,7 @@ class OOMAnalyzer(Printer):
             + self._notice(self.log_end_time.strftime("%a %b %d %X"))
         )
         lines.append("")
-        print("\n".join(lines))
+        return lines
 
 
 def run(system, options):
@@ -734,19 +738,47 @@ def run(system, options):
 
     # Find the largest incident
     largest_incident = None
-    sliced_oom_instances = []
     oom_instances = analyzer.analyze()
+    lines.extend(analyzer.print_pretty_log_info())
 
-    # Handle the reverse flag and slice the OOM incidents based on the show_counter
+    # Exit early if no OOM incidents were found
+    try:
+        first_item = next(oom_instances)
+    except StopIteration:
+        source = analyzer.get_log_source()
+        if source == "journalctl":
+            msg = "No OOM incidents found! Journalctl has no OOM incidents."
+        elif source == "dmesg":
+            msg = "No OOM incidents found! Dmesg has no OOM incidents."
+        else:
+            msg = (
+                "No OOM incidents found! "
+                + analyzer.log_file
+                + " has no OOM incidents."
+            )
+        lines.append(system._ok(msg))
+        lines.append("")
+        print("\n".join(lines))
+        return sys.exit(0)
+
+    # Add the first item back to the iterator
+    oom_instances = itertools.chain([first_item], oom_instances)
+
+    # Handle the reverse flag and obtain the last incident
     if reverse:
         oom_instances = iter(reversed(list(oom_instances)))
 
-    killed_services_count = defaultdict(int)
     last_incident = None
-    for oom_instance in oom_instances or []:
-        # Only obtain the first N incidents for use later
-        last_incident = oom_instance
-        if oom_instance["incident_number"] < show_counter + 1:
+    sliced_oom_instances = []
+    killed_services_count = defaultdict(int)
+    for index, oom_instance in enumerate(oom_instances or []):
+        # If reverse is set, we need to get the last incident, which is actually the first incident
+        if reverse and last_incident is None:
+            last_incident = oom_instance
+        else:
+            last_incident = oom_instance
+
+        if index < show_counter:
             sliced_oom_instances.append(oom_instance)
         # Find the largest incident
         if (
@@ -761,26 +793,6 @@ def run(system, options):
     sorted_killed_service_count = sorted(
         killed_services_count.items(), key=lambda x: x[1], reverse=True
     )
-
-    analyzer.print_pretty_log_info()
-    # Exit early if no OOM incidents were found
-    if last_incident is None:
-        source = analyzer.get_log_source()
-        if source == "journalctl":
-            msg = "No OOM incidents found! Journalctl has no OOM incidents."
-        elif source == "dmesg":
-            msg = "No OOM incidents found! Dmesg has no OOM incidents."
-        else:
-            msg = (
-                "No OOM incidents found! "
-                + analyzer.log_file
-                + " has no OOM incidents."
-            )
-
-        lines.append(system._ok(msg))
-        lines.append("")
-        print("\n".join(lines))
-        return sys.exit(0)
 
     total_incidents = last_incident["incident_number"]
 
@@ -834,25 +846,20 @@ def run(system, options):
         lines.append("")
         lines.append(system._header("The largest OOM incident in this log file was:"))
         lines.append("")
-        analyzer.print_pretty_oom_instance(largest_incident)
+        lines.extend(analyzer.print_pretty_oom_instance(largest_incident))
         lines.append(system.spacer)
 
-    # print()
-    # print(system.spacer)
     lines.append("")
-
     lines.append(system._header("         OOM Incidents"))
     lines.append(system.spacer)
     lines.append("")
     lines.append("Displaying {} OOM incidents:".format(show_counter))
+    lines.append("")
 
     # Display OOM incidents based on the show_counter and reverse (if provided)
-    lines.append("")
-    print("\n".join(lines))
     for instance in sliced_oom_instances:
-        analyzer.print_pretty_oom_instance(instance)
+        lines.extend(analyzer.print_pretty_oom_instance(instance))
 
-    lines = []
     lines.append(system.spacer)
     lines.append("")
 
