@@ -354,6 +354,7 @@ class OOMAnalyzer(Printer):
         self.log_end_time = None
         self.oom_counter = 0
         self._get_log_source = None
+        self._system_ram = None
 
     def get_log_source(self, log_file=None, journalctl=None, dmesg=None):
         """Method to get the log source, allowing for manual override"""
@@ -431,6 +432,11 @@ class OOMAnalyzer(Printer):
                 # Used to extract the end time of the log. Only assign if line is not empty
                 if line.strip():
                     state["last_line"] = line
+                # Extract the ram from the system logs if possible
+                if not self._system_ram:
+                    ram = self.get_ram_from_logs(line)
+                    if ram:
+                        self._system_ram = round(ram)
                 # Start of a new OOM incident
                 if self.is_oom_start(line):
                     line = self.strip_brackets_pid(line)
@@ -439,7 +445,11 @@ class OOMAnalyzer(Printer):
                     self.rss_column = line.split().index("rss") + 1
                     # If we've already started an OOM incident, yield it and start a new one
                     if current_instance:
+                        current_instance["system_ram"] = (
+                            self._system_ram if self._system_ram else self.system.ram
+                        )
                         yield current_instance
+                        self._system_ram = None
                         state["found_killed"] = False
                     current_instance = {
                         "total_mb": 0,
@@ -493,6 +503,20 @@ class OOMAnalyzer(Printer):
         rss_mb = rss * 4 // 1024
         name = fields[-1]
         return {"rss": rss_mb, "name": name}
+
+    def get_ram_from_logs(self, line):
+        """Method to return the RAM indicated in the logs, rather than the host machine"""
+        # total RAM printed in preable before each OOM-killer event
+        # as count of 4K pages.
+        m = re.search("([0-9]+) pages RAM", line)
+        if m:
+            return int(m.group(1)) * 4 / 1024
+        # Alternatively if running inside a cgroup then use the configured
+        # memory limit.
+        m = re.search("memory: usage [0-9]+kB, limit ([0-9]+)kB", line)
+        if m:
+            return int(m.group(1)) / 1024
+        return None
 
     def is_killed_process(self, line):
         """Check if the line is a killed process line"""
@@ -585,18 +609,27 @@ class OOMAnalyzer(Printer):
 
     def print_pretty_oom_instance(self, oom_instance):
         """Method to print the OOM incident in a pretty format"""
-        # Print general overview
-        print(
+        lines = []
+        lines.append(
             self._warning("OOM Incident: ")
             + self._notice(str(oom_instance["incident_number"]))
         )
-        print(
+        lines.append(
             self._header("Start Time: ")
-            + self._notice(oom_instance["start_time"].strftime("%a %b %d %X"))
+            + self._ok(oom_instance["start_time"].strftime("%a %b %d %X"))
         )
-        print(self._header("The following processes were killed:"))
+        lines.append(
+            self._header("System RAM: ")
+            + self._ok(str(oom_instance["system_ram"]) + " MB")
+        )
+        lines.append(
+            self._header("Total RAM at Incident: ")
+            + self._critical(str(oom_instance["total_mb"]) + " MB")
+        )
+
+        lines.append(self._header("The following processes were killed:"))
         for killed in oom_instance["killed"]:
-            print("  " + self._critical(killed))
+            lines.append("  " + self._critical(killed))
 
         sorted_result, count = self.sorted_results(oom_instance["processes"])
 
@@ -606,7 +639,7 @@ class OOMAnalyzer(Printer):
         rss_width = max(len(str(rss)) for _, rss in sorted_result) + 7
 
         # Print header row
-        print(self._header("Processes (showing top 10 processes):"))
+        lines.append(self._header("Processes (showing top 10 processes):"))
         header_row = (
             "{process:<{process_width}}{count:<{count_width}}{rss:<{rss_width}}".format(
                 process="PROCESS",
@@ -617,7 +650,7 @@ class OOMAnalyzer(Printer):
                 rss_width=rss_width,
             )
         )
-        print(self._header("  " + header_row.rstrip()))
+        lines.append(self._header("  " + header_row.rstrip()))
 
         # Print data rows
         for process, rss in sorted_result[:10]:
@@ -629,36 +662,41 @@ class OOMAnalyzer(Printer):
                 rss="{} MB".format(rss),
                 rss_width=rss_width,
             )
-            print("  " + self._notice(data_row.rstrip()))
+            lines.append("  " + self._notice(data_row.rstrip()))
 
-        print()
+        lines.append("")
+        print("\n".join(lines))
 
     def print_pretty_log_info(self):
         """Method to print the OOM incident in a pretty format"""
         source = self.get_log_source()
+
+        lines = []
         if source == "journalctl":
-            print(self._header("Using Journalctl: ") + self._ok("True"))
+            lines.append(self._header("Using Journalctl: ") + self._ok("True"))
         elif source == "dmesg":
-            print(self._header("Using Dmesg: ") + self._ok("True"))
+            lines.append(self._header("Using Dmesg: ") + self._ok("True"))
         else:
-            print(self._header("Using Log File: ") + self._ok(self.log_file))
+            lines.append(self._header("Using Log File: ") + self._ok(self.log_file))
 
         # Exit early if log file is empty
         if not self.log_start_time and not self.log_end_time:
-            print()
-            print(self._warning("Log file appears to be empty"))
-            print()
+            lines.append("")
+            lines.append(self._warning("Log file appears to be empty"))
+            lines.append("")
+            print("\n".join(lines))
             sys.exit(0)
 
-        print(
+        lines.append(
             self._header("Log Start Time: ")
             + self._notice(self.log_start_time.strftime("%a %b %d %X"))
         )
-        print(
+        lines.append(
             self._header("Log End Time: ")
             + self._notice(self.log_end_time.strftime("%a %b %d %X"))
         )
-        print()
+        lines.append("")
+        print("\n".join(lines))
 
 
 def run(system, options):
@@ -673,6 +711,7 @@ def run(system, options):
 
     # Print system and log overview
     system.print_pretty()
+
     # Quick check
     if quick:
         all_results = analyzer.quick_check()
