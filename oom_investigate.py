@@ -775,7 +775,7 @@ def run(system, options):
         # If reverse is set, we need to get the last incident, which is actually the first incident
         if reverse and last_incident is None:
             last_incident = oom_instance
-        else:
+        elif not reverse:
             last_incident = oom_instance
 
         if index < show_counter:
