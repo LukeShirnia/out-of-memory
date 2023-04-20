@@ -712,21 +712,23 @@ def run(system, options):
     # Print system and log overview
     system.print_pretty()
 
+    lines = []
     # Quick check
     if quick:
         all_results = analyzer.quick_check()
-        print(system.spacer)
-        print()
-        print(system._warning("Performing a quick check..."))
+        lines.append(system.spacer)
+        lines.append("")
+        lines.append(system._warning("Performing a quick check..."))
         for log, count in all_results.items():
-            print(
+            lines.append(
                 system._header("File {}: {} OOM incidents").format(
                     log, system._critical(str(count))
                 )
             )
-        print()
-        print(system.spacer)
-        print()
+        lines.append("")
+        lines.append(system.spacer)
+        lines.append("")
+        print("\n".join(lines))
 
         return sys.exit(0)
 
@@ -775,91 +777,97 @@ def run(system, options):
                 + " has no OOM incidents."
             )
 
-        print(system._ok(msg))
-        print()
+        lines.append(system._ok(msg))
+        lines.append("")
+        print("\n".join(lines))
         return sys.exit(0)
 
     total_incidents = last_incident["incident_number"]
 
     # OOM Overview
-    print(system.spacer)
-    print()
-    print()
-    print(
+    lines.append(system.spacer)
+    lines.append("")
+    lines.append("")
+    lines.append(
         system._critical(
             "WARNING: This device has run out of memory at least once in this log file."
         )
     )
-    print()
-    print(system.spacer)
-    print()
-    print(system._header("      Incident Overview"))
-    print(system.spacer)
-    print()
-    print(system._header("OOM Incidents: ") + system._critical(str(total_incidents)))
-    print(
+    lines.append("")
+    lines.append(system.spacer)
+    lines.append("")
+    lines.append(system._header("      Incident Overview"))
+    lines.append(system.spacer)
+    lines.append("")
+    lines.append(
+        system._header("OOM Incidents: ") + system._critical(str(total_incidents))
+    )
+    lines.append(
         "Highest OOM Incident: "
         + system._warning("Incident Number " + str(largest_incident["incident_number"]))
     )
-    print(
+    lines.append(
         "Memory Used In Incident: "
         + system._warning(str(largest_incident["total_mb"]) + " MB")
     )
-    print("Killed Services: ")
+    lines.append("Killed Services: ")
     for service, count in sorted_killed_service_count:
-        print(
+        lines.append(
             "- "
             + system._warning(service)
             + ": killed "
             + system._critical(str(count))
             + " times"
         )
-    print(system.spacer)
+    lines.append(system.spacer)
 
     # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
     # display it.
     if largest_incident["incident_number"] not in list(
         [i["incident_number"] for i in sliced_oom_instances]
     ):
-        print()
-        print(system.spacer)
-        print()
-        print(system._critical("      Largest Incident"))
-        print(system.spacer)
-        print()
-        print(system._header("The largest OOM incident in this log file was:"))
-        print()
+        lines.append("")
+        lines.append(system.spacer)
+        lines.append("")
+        lines.append(system._critical("      Largest Incident"))
+        lines.append(system.spacer)
+        lines.append("")
+        lines.append(system._header("The largest OOM incident in this log file was:"))
+        lines.append("")
         analyzer.print_pretty_oom_instance(largest_incident)
-        print(system.spacer)
+        lines.append(system.spacer)
 
     # print()
     # print(system.spacer)
-    print()
+    lines.append("")
 
-    print(system._header("         OOM Incidents"))
-    print(system.spacer)
-    print()
-    print("Displaying {} OOM incidents:".format(show_counter))
+    lines.append(system._header("         OOM Incidents"))
+    lines.append(system.spacer)
+    lines.append("")
+    lines.append("Displaying {} OOM incidents:".format(show_counter))
 
     # Display OOM incidents based on the show_counter and reverse (if provided)
-    print()
+    lines.append("")
+    print("\n".join(lines))
     for instance in sliced_oom_instances:
         analyzer.print_pretty_oom_instance(instance)
 
-    print(system.spacer)
-    print()
+    lines = []
+    lines.append(system.spacer)
+    lines.append("")
 
     # Only display this message if there are more oom incidents than the show_counter
     if total_incidents > show_counter:
-        print()
-        print(
+        lines.append("")
+        lines.append(
             system._warning(
                 "(To increase the number of OOM incidents displayed, use the -s flag)"
             )
         )
-        print()
+        lines.append("")
 
-    print()
+    lines.append("")
+    print("\n".join(lines))
 
     return sys.exit(0)
 
