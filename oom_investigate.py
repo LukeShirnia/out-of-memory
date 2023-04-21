@@ -622,19 +622,16 @@ class OOMAnalyzer(Printer):
             + self._notice(str(oom_instance["incident_number"]))
         )
         lines.append(
-            self._header("Start Time: ")
+            "Start Time: "
             + self._ok(oom_instance["start_time"].strftime("%a %b %d %X"))
         )
+        lines.append("System RAM: " + self._ok(str(oom_instance["system_ram"]) + " MB"))
         lines.append(
-            self._header("System RAM: ")
-            + self._ok(str(oom_instance["system_ram"]) + " MB")
-        )
-        lines.append(
-            self._header("Total RAM at Incident: ")
+            "Total RAM at Incident: "
             + self._critical(str(oom_instance["total_mb"]) + " MB")
         )
 
-        lines.append(self._header("The following processes were killed:"))
+        lines.append(self._warning("The following processes were killed:"))
         for killed in oom_instance["killed"]:
             lines.append("  " + self._critical(killed))
 
@@ -817,15 +814,7 @@ def run(system, options):
     lines.append(
         system._header("OOM Incidents: ") + system._critical(str(total_incidents))
     )
-    lines.append(
-        "Highest OOM Incident: "
-        + system._warning("Incident Number " + str(largest_incident["incident_number"]))
-    )
-    lines.append(
-        "Memory Used In Incident: "
-        + system._warning(str(largest_incident["total_mb"]) + " MB")
-    )
-    lines.append("Killed Services: ")
+    lines.append("Killed Services across all incidents: ")
     for service, count in sorted_killed_service_count:
         lines.append(
             "- "
@@ -834,6 +823,19 @@ def run(system, options):
             + system._critical(str(count))
             + " times"
         )
+    lines.append("")
+    lines.append(
+        "Highest OOM Incident: "
+        + system._warning("Incident Number " + str(largest_incident["incident_number"]))
+    )
+    lines.append(
+        "System Ram: " + system._warning(str(largest_incident["system_ram"]) + " MB")
+    )
+    lines.append(
+        "Memory Used In Incident: "
+        + system._critical(str(largest_incident["total_mb"]) + " MB")
+    )
+    lines.append("")
     lines.append(system.spacer)
 
     # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
