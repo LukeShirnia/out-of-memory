@@ -769,7 +769,9 @@ def run(system, options):
         oom_instances = iter(reversed(list(oom_instances)))
 
     last_incident = None
-    sliced_oom_instances = []
+    sliced_oom_instance_numbers = []
+    oom_lines = []
+
     killed_services_count = defaultdict(int)
     for index, oom_instance in enumerate(oom_instances or []):
         # If reverse is set, we need to get the last incident, which is actually the first incident
@@ -779,7 +781,8 @@ def run(system, options):
             last_incident = oom_instance
 
         if index < show_counter:
-            sliced_oom_instances.append(oom_instance)
+            sliced_oom_instance_numbers.append(oom_instance["incident_number"])
+            oom_lines.extend(analyzer.print_pretty_oom_instance(oom_instance))
         # Find the largest incident
         if (
             largest_incident is None
@@ -840,9 +843,7 @@ def run(system, options):
 
     # Lets ALWAYS display the largest OOM incident. If it is not in the show_instances list,
     # display it.
-    if largest_incident["incident_number"] not in list(
-        [i["incident_number"] for i in sliced_oom_instances]
-    ):
+    if largest_incident["incident_number"] not in sliced_oom_instance_numbers:
         lines.append("")
         lines.append(system.spacer)
         lines.append("")
@@ -862,9 +863,7 @@ def run(system, options):
     lines.append("")
 
     # Display OOM incidents based on the show_counter and reverse (if provided)
-    for instance in sliced_oom_instances:
-        lines.extend(analyzer.print_pretty_oom_instance(instance))
-
+    lines.extend(oom_lines)
     lines.append(system.spacer)
     lines.append("")
 
