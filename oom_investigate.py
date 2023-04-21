@@ -437,7 +437,7 @@ class OOMAnalyzer(Printer):
                 if not self._system_ram:
                     ram = self.get_ram_from_logs(line)
                     if ram:
-                        self._system_ram = round(ram)
+                        self._system_ram = ram
                 # Start of a new OOM incident
                 if self.is_oom_start(line):
                     line = self.strip_brackets_pid(line)
@@ -447,7 +447,7 @@ class OOMAnalyzer(Printer):
                     # If we've already started an OOM incident, yield it and start a new one
                     if current_instance:
                         current_instance["system_ram"] = (
-                            self._system_ram if self._system_ram else self.system.ram
+                            format(self._system_ram if self._system_ram else self.system.ram, ",")
                         )
                         yield current_instance
                         self._system_ram = None
@@ -628,7 +628,7 @@ class OOMAnalyzer(Printer):
         lines.append("System RAM: " + self._ok(str(oom_instance["system_ram"]) + " MB"))
         lines.append(
             "Total RAM at Incident: "
-            + self._critical(str(oom_instance["total_mb"]) + " MB")
+            + self._critical(str(format(oom_instance["total_mb"], ",")) + " MB")
         )
 
         lines.append(self._warning("The following processes were killed:"))
@@ -663,7 +663,7 @@ class OOMAnalyzer(Printer):
                 process_width=process_width,
                 count=count[process],
                 count_width=count_width,
-                rss="{} MB".format(rss),
+                rss=format(rss, ",") + " MB",
                 rss_width=rss_width,
             )
             lines.append("  " + self._notice(data_row.rstrip()))
