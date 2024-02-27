@@ -72,9 +72,8 @@ def os_check():
     '''
     os_platform = platform.system()
     if os_platform == "Linux":
-        distro = platform.linux_distribution()[0]
-        distro = distro.split()[0]
-        return distro
+        distro = platform.freedesktop_os_release()
+        return distro['ID']
     else:
         print("Stop Using a Rubbish OS!!")
 
