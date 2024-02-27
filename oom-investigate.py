@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Author:       Luke Shirnia
 # Source:       https://github.com/LukeShirnia/out-of-memory/
@@ -42,27 +42,27 @@ def print_header():
     '''
     Disclaimer and Script Header
     '''
-    print(bcolors.CYAN + "-" * 40 + bcolors.ENDC)
+    print((bcolors.CYAN + "-" * 40 + bcolors.ENDC))
     print("      _____ _____ _____ ")
     print("     |     |     |     |")
     print("     |  |  |  |  | | | |")
     print("     |_____|_____|_|_|_|")
     print("     Out Of Memory Analyser")
     print("")
-    print(bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC)
-    print(bcolors.RED +
-        "If system OOMs too viciously, there may be nothing logged!")
-    print("Do NOT take this script as FACT, investigate further" +
-        bcolors.ENDC)
-    print(bcolors.CYAN + "-" * 40 + bcolors.ENDC)
+    print((bcolors.RED + bcolors.UNDERLINE + "Disclaimer:" + bcolors.ENDC))
+    print((bcolors.RED +
+        "If system OOMs too viciously, there may be nothing logged!"))
+    print(("Do NOT take this script as FACT, investigate further" +
+        bcolors.ENDC))
+    print((bcolors.CYAN + "-" * 40 + bcolors.ENDC))
 
 
 def neat_oom_invoke():
     '''
     Print WARNING if there is an OOM issue
     '''
-    print(bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" +
-        bcolors.ENDC)
+    print((bcolors.RED + bcolors.BOLD + "######## OOM ISSUE ########" +
+        bcolors.ENDC))
     print("")
 
 
@@ -72,23 +72,10 @@ def os_check():
     '''
     os_platform = platform.system()
     if os_platform == "Linux":
-        distro = platform.linux_distribution()[0]
-        distro = distro.split()[0]
-        return distro
+        distro = platform.freedesktop_os_release()
+        return distro['ID']
     else:
         print("Stop Using a Rubbish OS!!")
-
-
-def system_resources():
-    '''
-    Get the RAM info from /proc
-    '''
-    with open("/proc/meminfo", "r") as meminfo:
-        for lines in meminfo:
-            if "MemTotal" in lines.strip():
-                memory_value = int(lines.split()[1])
-                system_memory = int(memory_value / 1024)
-                return system_memory
 
 
 def strip_rss(line, column_number):
@@ -119,38 +106,38 @@ def strip_line(line):
 
 
 def print_oom_output(
-        i, date_format, system_resources, total_rss_per_incident,
+        i, date_format, system_ram, total_rss_per_incident,
         killed_services, service_value_list):
     '''
     Print the Output of an OOM incident (Inc TOP 5 RAM consumers)
     '''
-    print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
-    print(bcolors.BOLD + bcolors.PURPLE + "{0} ".format(
-        date_format[i - 1]) + bcolors.ENDC)
-    print(bcolors.YELLOW + "System RAM:             " + bcolors.ENDC +
-        bcolors.CYAN + "{0:<1} MB".format(system_resources()) + bcolors.ENDC)
-    print(bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC +
+    print((bcolors.BOLD + "-" * 40 + bcolors.ENDC))
+    print((bcolors.BOLD + bcolors.PURPLE + "{0} ".format(
+        date_format[i - 1]) + bcolors.ENDC))
+    print((bcolors.YELLOW + "System RAM:             " + bcolors.ENDC +
+        bcolors.CYAN + "{0:<1} MB".format(system_ram) + bcolors.ENDC))
+    print((bcolors.YELLOW + "Estimated RAM at OOM:   " + bcolors.ENDC +
         bcolors.CYAN + "{0:<3} MB".format(int(sum(
-            total_rss_per_incident[i] * 4) / 1024)) + bcolors.ENDC)
-    print(bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED +
+            total_rss_per_incident[i] * 4) / 1024)) + bcolors.ENDC))
+    print((bcolors.YELLOW + "Services" + bcolors.ENDC + bcolors.RED +
         " Killed:        " + bcolors.ENDC + bcolors.RED + "{0} ".format(
-            ", ".join(killed_services[i])) + bcolors.ENDC)
+            ", ".join(killed_services[i])) + bcolors.ENDC))
     print("")
-    print(bcolors.UNDERLINE +
-        "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC)
+    print((bcolors.UNDERLINE +
+        "Top 5 RAM Consumers at time of OOM:" + bcolors.ENDC))
 
     for x in service_value_list[i]:
         _service_name = x[0]
         _process_count = "(%s)" % x[1]
         _service_mb = int(x[2])
-        print("Service: {0:<16} {1:>4} {2:>6} MB ".format(
-            _service_name[:12], _process_count, _service_mb))
+        print(("Service: {0:<16} {1:>4} {2:>6} MB ".format(
+            _service_name[:12], _process_count, _service_mb)))
 
     print("")
 
 
 def check_if_incident(
-    counter, oom_date_count, total_rss_per_incident, killed_services,
+        counter, oom_date_count, system_ram, total_rss_per_incident, killed_services,
         service_value_list, LOG_FILE, all_killed_services):
     '''
     Check if OOM incident occurred. ADD FUNCTION TO PROMPT FOR OTHER LOG FILES
@@ -170,25 +157,25 @@ def check_if_incident(
         date_check(oom_date_count)
         i = 1
         print_oom_output(
-            i, date_format, system_resources, total_rss_per_incident,
+            i, date_format, system_ram, total_rss_per_incident,
             killed_services, service_value_list)
     elif counter == 2:  # if only 3 instance of oom then print all
         date_check(oom_date_count)
         for i in (1, 2):
             print_oom_output(
-                i, date_format, system_resources, total_rss_per_incident,
+                i, date_format, system_ram, total_rss_per_incident,
                 killed_services, service_value_list)
     elif counter >= 3:  # if more 3 or more oom instances, print 1st, 2nd, last
         date_check(oom_date_count)
         for i in (1, 2, counter - 1):
             print_oom_output(
-                i, date_format, system_resources, total_rss_per_incident,
+                i, date_format, system_ram, total_rss_per_incident,
                 killed_services, service_value_list)
     else:
-        print("-" * 40)
-        print("OOM has " + bcolors.GREEN + "NOT" + bcolors.ENDC +
-            " occured in specified log file!")
-        print("-" * 40)
+        print(("-" * 40))
+        print(("OOM has " + bcolors.GREEN + "NOT" + bcolors.ENDC +
+            " occured in specified log file!"))
+        print(("-" * 40))
         print("")
         option = 'exclude'
         # print similar log files to check for an issue
@@ -211,8 +198,8 @@ def find_all_logs(OOM_LOG, option):
                 result.append(os.path.join(root, name))
     result.sort()
     if len(result) > 1:
-        print(bcolors.YELLOW +
-            "Checking other logs, select an option:" + bcolors.ENDC)
+        print((bcolors.YELLOW +
+            "Checking other logs, select an option:" + bcolors.ENDC))
         if option == 'exclude':
             while OOM_LOG in result:
                 result.remove(OOM_LOG)
@@ -236,13 +223,13 @@ def quick_check_all_logs(results):
             if "[ pid ]   uid  tgid total_vm      rss" in line.strip():
                 total_occurences += 1
         if total_occurences >= 1:
-            print(bcolors.GREEN + "Option: {0}".format(option) + bcolors.ENDC +
-                "  {0:26} - Occurrences: {1}".format(a, total_occurences))
+            print((bcolors.GREEN + "Option: {0}".format(option) + bcolors.ENDC +
+                "  {0:26} - Occurrences: {1}".format(a, total_occurences)))
             next_logs_to_search.append(a)
             option += 1
         else:
-            print("           {0:26} - Occurrences: {1}".format(
-                a, total_occurences))
+            print(("           {0:26} - Occurrences: {1}".format(
+                a, total_occurences)))
     select_next_logfile(next_logs_to_search)
 
 
@@ -260,9 +247,9 @@ def select_next_logfile(log_file):
             while Not_Integer:
                 print("Which file should we check next?")
                 tty = open('/dev/tty')
-                print("Select an option number between" + bcolors.GREEN +
+                print(("Select an option number between" + bcolors.GREEN +
                     " 1 " + bcolors.ENDC + "and " + bcolors.GREEN +
-                    str(len(log_file)) + bcolors.ENDC + ": ")
+                    str(len(log_file)) + bcolors.ENDC + ": "))
                 option_answer = tty.readline().strip()
                 tty.close()
                 if option_answer.isdigit():
@@ -303,7 +290,7 @@ def check_dmesg(oom_date_count):
     for dmesg_line in check_dmesg:
         if b"[ pid ]   uid  tgid total_vm      rss" in dmesg_line.lower():
             dmesg_count.append(dmesg_line.strip())
-    dmesg_count = list(filter(None, dmesg_count))
+    dmesg_count = list([_f for _f in dmesg_count if _f])
     _compare_dmesg(len(dmesg_count), oom_date_count)
 
 
@@ -313,20 +300,20 @@ def _compare_dmesg(dmesg_count, oom_date_count):
     '''
     if dmesg_count > oom_date_count and oom_date_count == 0:
         print("")
-        print(bcolors.YELLOW +
-            "Dmesg reporting errors but log files are empty...")
-        print("Log files appear to have been rotated" + bcolors.ENDC)
+        print((bcolors.YELLOW +
+            "Dmesg reporting errors but log files are empty..."))
+        print(("Log files appear to have been rotated" + bcolors.ENDC))
         print("")
-        print("dmesg incidents: ", dmesg_count)
+        print(("dmesg incidents: ", dmesg_count))
     elif dmesg_count > oom_date_count:
         print("")
-        print(bcolors.YELLOW + "Note: " + bcolors.ENDC + "More reported " +
+        print((bcolors.YELLOW + "Note: " + bcolors.ENDC + "More reported " +
             bcolors.RED + "errors " + bcolors.ENDC + "in dmesg " +
             bcolors.PURPLE + "({0})".format(dmesg_count) + bcolors.ENDC +
             " than current log file " + bcolors.PURPLE + "({0})".format(
-                oom_date_count) + bcolors.ENDC)
-        print("Run with " + bcolors.GREEN + "--quick" + bcolors.ENDC +
-            " option to check available log files")
+                oom_date_count) + bcolors.ENDC))
+        print(("Run with " + bcolors.GREEN + "--quick" + bcolors.ENDC +
+            " option to check available log files"))
         print("")
 
 
@@ -345,25 +332,25 @@ def get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
         print("")
         print("File appears to be corrupt or empty")
         print("Please check:")
-        print("             {0}".format(LOG_FILE))
+        print(("             {0}".format(LOG_FILE)))
         print("")
         sys.exit(1)
     last_line = last_line.split()[0:3]
     print("")
-    print(bcolors.UNDERLINE + "Log Information" + bcolors.ENDC)
-    print(bcolors.GREEN +
-        "Log File  : " + bcolors.YELLOW + " %s " % (LOG_FILE) + bcolors.ENDC)
-    print(bcolors.GREEN +
+    print((bcolors.UNDERLINE + "Log Information" + bcolors.ENDC))
+    print((bcolors.GREEN +
+        "Log File  : " + bcolors.YELLOW + " %s " % (LOG_FILE) + bcolors.ENDC))
+    print((bcolors.GREEN +
         "Start date: " + bcolors.ENDC + bcolors.YELLOW + " %s " % (
-            ", ".join(first_line)) + bcolors.ENDC)
-    print(bcolors.GREEN +
+            ", ".join(first_line)) + bcolors.ENDC))
+    print((bcolors.GREEN +
         "End Date  : " + bcolors.ENDC + bcolors.YELLOW + " %s " % (
-            ", ".join(last_line)) + bcolors.ENDC)
+            ", ".join(last_line)) + bcolors.ENDC))
     print("")
     if len(oom_date_count) > 4:
         neat_oom_invoke()
-        print("Number of OOM occurrence in log file: " +
-            bcolors.RED + " %s " % (len(oom_date_count) - 1) + bcolors.ENDC)
+        print(("Number of OOM occurrence in log file: " +
+            bcolors.RED + " %s " % (len(oom_date_count) - 1) + bcolors.ENDC))
     elif len(oom_date_count) <= 4 and len(oom_date_count) > 0:
         neat_oom_invoke()
         "Number of OOM occurrence in log file: %s " % (len(oom_date_count))
@@ -373,11 +360,11 @@ def get_log_file_start_date(LOG_FILE, oom_date_count, all_killed_services):
     all_killed_services = dict(
         (i, all_killed_services.count(i)) for i in all_killed_services)
     ServiceCount = sorted(
-        ((v, k) for k, v in all_killed_services.items()), reverse=True)
+        ((v, k) for k, v in list(all_killed_services.items())), reverse=True)
     for i in ServiceCount:
-        print("Service " + bcolors.RED + "{0:12} ".format(i[1]) +
+        print(("Service " + bcolors.RED + "{0:12} ".format(i[1]) +
             bcolors.ENDC + "Killed " + bcolors.RED + "{0} ".format(i[0]) +
-            bcolors.ENDC + "time(s)")
+            bcolors.ENDC + "time(s)"))
     print("")
 
 
@@ -443,7 +430,7 @@ def openfile(filename, normal_file):
             return open(filename, "r")
     except IOError:
         print("")
-        print("Does the file specified exist? {0}".format(filename))
+        print(("Does the file specified exist? {0}".format(filename)))
         print("Please check again")
         print("")
         sys.exit(1)
@@ -466,10 +453,16 @@ def date_time(line):
     Creates a date object from an extracted string
     retreived from the log line
     '''
-    date_of_oom = line.split()[0:3]
-    date_of_oom = " ".join(date_of_oom)
-    date_check = datetime.datetime.strptime(
-        date_of_oom, "%b %d %H:%M:%S")
+    if line[0] == '[':
+        # dmesg-style date: [Mon Feb  1 09:08:13 2021]
+        date_of_oom = line[1:].split("]")[0]
+        date_check = datetime.datetime.strptime(date_of_oom, "%c")
+    else:
+        # syslog-style date format.
+        date_of_oom = line.split()[0:3]
+        date_of_oom = " ".join(date_of_oom)
+        date_check = datetime.datetime.strptime(
+            date_of_oom, "%b %d %H:%M:%S")
     return date_check
 
 
@@ -510,26 +503,26 @@ def date_check(oom_date_count):
     dates_test = dict((i, dates_test.count(i)) for i in dates_test)
     dates_sorted = sorted(dates_test.items())
     dates_test = date_time_counter_split(dates_sorted)
-    print(bcolors.YELLOW + bcolors.UNDERLINE + "KEY" + bcolors.ENDC +
-        bcolors.YELLOW)
+    print((bcolors.YELLOW + bcolors.UNDERLINE + "KEY" + bcolors.ENDC +
+        bcolors.YELLOW))
     print("D = Date(s) OOM")
     print("H = Hour OOM Occurred")
-    print("O = Number of Occurrences in Date/Hour" + bcolors.ENDC)
+    print(("O = Number of Occurrences in Date/Hour" + bcolors.ENDC))
     print("")
-    print(bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " +
+    print((bcolors.UNDERLINE + "D" + bcolors.ENDC + "      " +
         bcolors.UNDERLINE + "H" + bcolors.ENDC + "  " + bcolors.UNDERLINE +
-        bcolors.UNDERLINE + "O" + bcolors.ENDC)
+        bcolors.UNDERLINE + "O" + bcolors.ENDC))
     for value in dates_test:
         print(value)
     print("")
     if len(oom_date_count) >= 3:
-        print(bcolors.HEADER + bcolors.UNDERLINE + "Note:" +
+        print((bcolors.HEADER + bcolors.UNDERLINE + "Note:" +
             bcolors.ENDC + " Only Showing: " + bcolors.GREEN + "3 " +
             bcolors.ENDC + "of the" + bcolors.RED + " %s occurrence" %
-            (len(oom_date_count)) + bcolors.ENDC)
-        print("Showing the " + bcolors.GREEN + "1st" + bcolors.ENDC +
+            (len(oom_date_count)) + bcolors.ENDC))
+        print(("Showing the " + bcolors.GREEN + "1st" + bcolors.ENDC +
             ", " + bcolors.GREEN + "2nd" + bcolors.ENDC + " and" +
-            bcolors.GREEN + " last" + bcolors.ENDC)
+            bcolors.GREEN + " last" + bcolors.ENDC))
 
 
 def OOM_record(LOG_FILE):
@@ -553,10 +546,20 @@ def OOM_record(LOG_FILE):
     record = False
     record_oom_true_false = False
     counter = 1
+    system_ram = None
     for line in inLogFile:
+        # total RAM printed in preable before each OOM-killer event
+        # as count of 4K pages.
+        m = re.search("([0-9]+) pages RAM", line)
+        if m:
+            system_ram = int(m.group(1)) * 4 / 1024
+        # Alternatively if running inside a cgroup then use the configured
+        # memory limit.
+        m = re.search("memory: usage [0-9]+kB, limit ([0-9]+)kB", line)
+        if m:
+            system_ram = int(m.group(1)) / 1024
         killed = re.search("Killed process (.*) total", line)
-        if "[ pid ]   uid  tgid total_vm      rss" in line.strip() \
-                and "kernel" in line.lower():
+        if re.search("\[\s+pid\s+\]   uid  tgid total_vm      rss", line):
             total_rss[counter] = []
             killed_services[counter] = []
             unique_services[counter] = []
@@ -566,9 +569,6 @@ def OOM_record(LOG_FILE):
             oom_date_count.append(date_time(line))
             line = strip_line(line)
             column_number = find_rss_column(line.split())
-        elif "kernel" not in line.lower() and record:  # Skips log entries
-            # that may be interfering with oom output from kernel
-            pass
         elif " hi:" in line.strip() and record:
             pass
         elif "MAC=" in line.strip() and record:  # Skips log entires in
@@ -578,7 +578,7 @@ def OOM_record(LOG_FILE):
                 len(line.split()) < 14 and record:
             service_value_list[counter] = []
             list_of_values[counter] = list(
-                filter(None, list_of_values[counter]))
+                [_f for _f in list_of_values[counter] if _f])
             unique = find_unique_services(list_of_values[counter])
             oom_services = \
                 add_rss_for_processes(unique, list_of_values[counter])
@@ -608,7 +608,7 @@ def OOM_record(LOG_FILE):
             all_killed_services.append(killed)
     inLogFile.close()
     check_if_incident(
-        counter, oom_date_count, total_rss, killed_services,
+        counter, oom_date_count, system_ram, total_rss, killed_services,
         service_value_list, LOG_FILE, all_killed_services)
     check_dmesg(len(oom_date_count))
 
@@ -629,14 +629,14 @@ def get_log_file():
     Checks OS distribution and accepts arguments
     '''
     print_header()
-    os_check_value = os_check()
     if len(argv) == 1 or len(argv) == 2:
+        os_check_value = os_check()
         if os_check_value.lower() in CentOS_RedHat_Distro:
             OOM_LOG = "/var/log/messages"
             size_of_file = file_size(OOM_LOG)
             if size_of_file < 250:
                 return OOM_LOG
-                print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
+                print((bcolors.BOLD + "-" * 40 + bcolors.ENDC))
             else:
                 print("")
                 print("!!! File is too LARGE !!!")
@@ -647,7 +647,7 @@ def get_log_file():
             size_of_file = file_size(OOM_LOG)
             if size_of_file < 250:
                 return OOM_LOG
-                print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
+                print((bcolors.BOLD + "-" * 40 + bcolors.ENDC))
             else:
                 print("")
                 print("!!! File is too LARGE !!!")
@@ -658,27 +658,15 @@ def get_log_file():
     elif len(argv) == 3:
         script, option, OOM_LOG = argv
         size_of_file = file_size(OOM_LOG)
-        if os_check_value.lower() in CentOS_RedHat_Distro:
-            if size_of_file < 250:  # check file size is below 250 MB
-                return OOM_LOG
-            else:
-                print("")
-                print("!!! File is too LARGE !!!")
-                print("Please consider splitting the file into smaller chunks \
-                    (such as dates)")
-        elif os_check_value.lower() in Ubuntu_Debian_Distro:
-            if size_of_file < 250:
-                return OOM_LOG
-            else:
-                print("")
-                print("!!! File is too LARGE !!!")
-                print("Please consider splitting the file into smaller chunks \
-                    (such as dates)")
+        if size_of_file < 250:  # check file size is below 250 MB
+            return OOM_LOG
         else:
-            print("Unsupported OS")
-            print(OOM_LOG)
+            print("")
+            print("!!! File is too LARGE !!!")
+            print("Please consider splitting the file into smaller chunks \
+                   (such as dates)")
     else:
-        print("Too Many Arguments - ", (len(argv) - 1))
+        print(("Too Many Arguments - ", (len(argv) - 1)))
         print("Try again")
 
 
@@ -690,10 +678,11 @@ def catch_log_exceptions(oom_log):
         OOM_record(oom_log)
     except Exception as error:
         print("")
-        print(bcolors.RED + "Error:" + bcolors.ENDC)
+        print((bcolors.RED + "Error:" + bcolors.ENDC))
         print(error)
         print("")
-        print(bcolors.BOLD + "-" * 40 + bcolors.ENDC)
+        print((bcolors.BOLD + "-" * 40 + bcolors.ENDC))
+        raise
 
 
 def main():
@@ -736,7 +725,7 @@ def main():
         try:
             catch_log_exceptions(get_log_file())
         except(EOFError, KeyboardInterrupt):
-            print
+            print()
             sys.exit(0)
 
 
