@@ -1,0 +1,41 @@
+name: Main
+
+on:
+  workflow_dispatch:
+  push:
+      branches:
+        - main
+
+jobs:
+  detect-file-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      apa: ${{ steps.changes.outputs.oom_investigate }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          oom_investigate:
+              - ".github/workflows/*.yml"
+              - "tests/**/*"
+              - "oom_investigate.py"
+  black:
+      needs:
+          - detect-file-changes
+      uses: ./.github/workflows/black.yml
+      if: needs.detect-file-changes.outputs.oom_investigate == 'true'
+
+  isort:
+      needs:
+          - detect-file-changes
+      uses: ./.github/workflows/isort.yml
+      if: needs.detect-file-changes.outputs.oom_investigate == 'true'
+
+  pytest:
+      needs:
+          - detect-file-changes
+      uses: ./.github/workflows/pytest.yml
+      if: needs.detect-file-changes.outputs.oom_investigate == 'true'
