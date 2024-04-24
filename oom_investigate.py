@@ -311,7 +311,7 @@ class System(Printer):
     def get_ram_info(self):
         try:
             mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
-            mem_gib = mem_bytes / (1024.0 ** 3)
+            mem_gib = mem_bytes / (1024.0**3)
             return round(mem_gib, 2)
         except ValueError:
             return None
@@ -446,8 +446,9 @@ class OOMAnalyzer(Printer):
                     self.rss_column = line.split().index("rss")
                     # If we've already started an OOM incident, yield it and start a new one
                     if current_instance:
-                        current_instance["system_ram"] = (
-                            format(self._system_ram if self._system_ram else self.system.ram, ",")
+                        current_instance["system_ram"] = format(
+                            self._system_ram if self._system_ram else self.system.ram,
+                            ",",
                         )
                         yield current_instance
                         self._system_ram = None
