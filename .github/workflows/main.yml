@@ -11,7 +11,7 @@ jobs:
   detect-file-changes:
     runs-on: ubuntu-latest
     outputs:
-      apa: ${{ steps.changes.outputs.oom_investigate }}
+      oom_investigate: ${{ steps.changes.outputs.oom_investigate }}
     
     steps:
     - uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
       id: changes
       with:
         filters: |
-          oom_investigate:
+            oom_investigate:
               - ".github/workflows/*.yml"
               - "tests/**/*"
               - "oom_investigate.py"
