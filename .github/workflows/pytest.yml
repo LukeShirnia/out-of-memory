@@ -4,13 +4,39 @@ on:
   workflow_call:
 
 jobs:
-  pytest:
-    runs-on: ubuntu-latest
+  pytest_legacy_python:
+    name: ${{ matrix.os }} ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-20.04]
+        python-version: ["2.7", "3.6"]
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Display Python version
+      run: python -c "import sys; print(sys.version)"
+
+    - name: Test with pytest
+      run: |
+        pip install pytest pytest-cov
+        pytest tests/
+
+  pytest_latest_python:
+    name: ${{ matrix.os }} ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3,6", "3.10"]
+        python-version: ["3.11"]
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
