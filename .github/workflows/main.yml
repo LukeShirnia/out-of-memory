@@ -11,6 +11,7 @@ jobs:
   detect-file-changes:
     runs-on: ubuntu-latest
     outputs:
+      docker_changes: ${{ steps.changes.outputs.docker_changes }}
       oom_investigate: ${{ steps.changes.outputs.oom_investigate }}
     
     steps:
@@ -19,10 +20,21 @@ jobs:
       id: changes
       with:
         filters: |
+            docker_changes:
+              - "Dockerfile"
+              - "docker-compose.yml"
             oom_investigate:
               - ".github/workflows/*.yml"
               - "tests/**/*"
               - "oom_investigate.py"
+
+  build-pytest-images:
+      needs:
+          - detect-file-changes
+      uses: ./.github/workflows/build-pytest-images.yml
+      if: needs.detect-file-changes.outputs.docker_changes == 'true'
+      secrets: inherit
+
   black:
       needs:
           - detect-file-changes
@@ -38,5 +50,6 @@ jobs:
   pytest:
       needs:
           - detect-file-changes
+          - build-pytest-images
       uses: ./.github/workflows/pytest.yml
       if: needs.detect-file-changes.outputs.oom_investigate == 'true'

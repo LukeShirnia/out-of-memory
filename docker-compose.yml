@@ -39,7 +39,7 @@ services:
         IMAGE: amazonlinux
         PIP: pip3
         PYTHON_VERSION: 3
-    image: amazonlinux
+    image: amazonlinux-pytest
     volumes:
       - .:/app
 
@@ -50,7 +50,7 @@ services:
         IMAGE: centos/python-27-centos7
         PIP: pip
         PYTHON_VERSION: 2
-    image: centos7
+    image: centos7-pytest
     volumes:
       - .:/app
 
@@ -62,6 +62,6 @@ services:
         IMAGE: sickcodes/docker-osx
         PIP: python -m pip
         PYTHON_VERSION: 3
-    image: osx
+    image: osx-pytest
     volumes:
       - .:/app

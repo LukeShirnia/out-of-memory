@@ -16,6 +16,6 @@ RUN if echo ${IMAGE} | grep -q "amazon"; then \
 RUN ${PIP} install pytest
 
 # Only install black on Python 3.x as it doesn't exist on 2.x
-RUN if [ $(${PYTHON_VERSION}) -ge 3 ]; then ${PIP} install black isort; fi
+RUN if [ $PYTHON_VERSION -ge 3 ]; then ${PIP} install black isort; fi
 
 WORKDIR /app

@@ -1,51 +1,49 @@
-name: Run Unit Tests on Multiple Python Versions
+
+name: Run Unit Tests on Multiple Python Versions and Distributions
 
 on:
   workflow_call:
 
+env:
+  REPOSITORY: lukeshirnia/out-of-memory
+
 jobs:
-  pytest_legacy_python:
-    name: python:${{ matrix.python-version }}
-    runs-on: ubuntu-20.04
-    container:
-      image: python:${{ matrix.python-version }}-buster
+  test-python-versions:
+    runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
       matrix:
-        python-version: ["2.7", "3.6"]
+        python-version: ["python27", "python36", "python310"]
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Display Python version
-      run: python -c "import sys; print(sys.version)"
-
-    - name: Test with pytest
+    - name: Run pytest
       run: |
-        pip install pytest pytest-cov
-        pytest tests/
+        docker run --rm \
+        -v ${{ github.workspace }}:/app \
+        ${{ env.REPOSITORY }}:${{ matrix.python-version }}-pytest \
+        pytest -v --ignore=tests/test_system.py
 
-  pytest_latest_python:
-    name: ${{ matrix.os }} ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
+  test-systems:
+    runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
       matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.11"]
+        distro: ["amazonlinux", "centos7", "osx"]
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Display Python version
-      run: python -c "import sys; print(sys.version)"
-
-    - name: Test with pytest
+    - name: Setup test command
+      id: setup
       run: |
-        pip install pytest pytest-cov
-        pytest tests/
+        if [ "${{ matrix.distro }}" == "osx" ]; then
+          echo "::set-output name=command::python -m pytest"
+        else
+          echo "::set-output name=command::pytest"
+        fi
+
+    - name: Run system tests
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/app \
+        ${{ env.REPOSITORY }}:${{ matrix.distro }}-pytest \
+        ${{ steps.setup.outputs.command }} -v tests/test_system.py -p no:cacheprovider
