@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  python27:
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: "2.7"
+    image: python27-pytest
+
+  python36:
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: "3.6"
+    image: python36-pytest
