@@ -9,6 +9,8 @@ RUN if echo ${IMAGE} | grep -q "amazon"; then \
     elif echo ${IMAGE} | grep -q "centos"; then \
       curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && \
       python get-pip.py; \
+    elif echo ${IMAGE} | grep -q "osx"; then \
+        python -m ensurepip; \
     fi
 
 RUN ${PIP} install pytest

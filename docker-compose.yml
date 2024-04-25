@@ -53,3 +53,15 @@ services:
     image: centos7
     volumes:
       - .:/app
+
+  # https://github.com/sickcodes/Docker-OSX
+  osx:
+    build:
+      context: .
+      args:
+        IMAGE: sickcodes/docker-osx
+        PIP: python -m pip
+        PYTHON_VERSION: 3
+    image: osx
+    volumes:
+      - .:/app

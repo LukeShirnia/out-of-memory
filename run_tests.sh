@@ -10,7 +10,7 @@ function display_help() {
 }
 
 function build_images(){
-    echo "Building images..."
+    echo "Building images. If this is the first time they're building, it might take a while.."
     docker compose build 2>&1 > /dev/null
 }
 
@@ -28,20 +28,25 @@ case "$COMMAND" in
         # Second part: Run system tests on different distrubutions
 
         # Part 1
+        # Run tests on multiple python versions
         build_images
-        versions=("python27" "python36" "python310")
-        for version in "${versions[@]}"
+        python_versions=("python27" "python36" "python310")
+        for version in "${python_versions[@]}"
         do
             echo "Running $COMMAND in $version"
             docker compose run --rm $version $COMMAND -v --ignore=tests/test_system.py
         done
 
         # Part 2
-        # Run system tests
-        distributions=("amazonlinux" "centos7")
+        # Run system specific tests
+        distributions=("amazonlinux" "centos7" "osx")
         for distro in "${distributions[@]}"
         do
-            echo "Running $COMMAND in $distro"
+            echo "Running test_system in $distro"
+            # OSX doesn't have a specific pytest binary, so we use the python module
+            if [ "$distro" == "osx" ]; then
+                COMMAND="python -m pytest"
+            fi
             docker compose run --rm $distro $COMMAND -v tests/test_system.py -p no:cacheprovider
         done
         ;;
