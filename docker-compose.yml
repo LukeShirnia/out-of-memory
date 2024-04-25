@@ -3,7 +3,9 @@ services:
     build:
       context: .
       args:
-        PYTHON_VERSION: "2.7"
+        IMAGE: python:2.7-buster
+        PIP: pip
+        PYTHON_VERSION: 2
     image: python27-pytest
     volumes:
       - .:/app
@@ -12,7 +14,9 @@ services:
     build:
       context: .
       args:
-        PYTHON_VERSION: "3.6"
+        IMAGE: python:3.6-buster
+        PIP: pip
+        PYTHON_VERSION: 3
     image: python36-pytest
     volumes:
       - .:/app
@@ -21,7 +25,31 @@ services:
     build:
       context: .
       args:
-        PYTHON_VERSION: "3.10"
+        IMAGE: python:3.10-buster
+        PIP: pip
+        PYTHON_VERSION: 3
     image: python310-pytest
+    volumes:
+      - .:/app
+
+  amazonlinux:
+    build:
+      context: .
+      args:
+        IMAGE: amazonlinux
+        PIP: pip3
+        PYTHON_VERSION: 3
+    image: amazonlinux
+    volumes:
+      - .:/app
+
+  centos7:
+    build:
+      context: .
+      args:
+        IMAGE: centos/python-27-centos7
+        PIP: pip
+        PYTHON_VERSION: 2
+    image: centos7
     volumes:
       - .:/app

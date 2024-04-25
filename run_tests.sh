@@ -23,12 +23,26 @@ fi
 COMMAND="$1"
 case "$COMMAND" in
     pytest)
+        # Broken into two parts.
+        # First part: Run nearly all tests on a collection of python versions
+        # Second part: Run system tests on different distrubutions
+
+        # Part 1
         build_images
         versions=("python27" "python36" "python310")
         for version in "${versions[@]}"
         do
             echo "Running $COMMAND in $version"
-            docker compose run --rm $version $COMMAND -v
+            docker compose run --rm $version $COMMAND -v --ignore=tests/test_system.py
+        done
+
+        # Part 2
+        # Run system tests
+        distributions=("amazonlinux" "centos7")
+        for distro in "${distributions[@]}"
+        do
+            echo "Running $COMMAND in $distro"
+            docker compose run --rm $distro $COMMAND -v tests/test_system.py -p no:cacheprovider
         done
         ;;
     black|isort)
@@ -36,7 +50,7 @@ case "$COMMAND" in
         # If black or isort, we only need to run in one version of python
         version="python310"
         echo "Running $COMMAND in $version"
-        docker compose run --rm python310 $COMMAND /app
+        docker compose run --rm $version $COMMAND /app
         ;;
     help)
         display_help

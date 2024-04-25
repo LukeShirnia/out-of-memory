@@ -1,6 +1,19 @@
+ARG IMAGE
+FROM ${IMAGE}
+ARG IMAGE
+ARG PIP
 ARG PYTHON_VERSION
-FROM python:${PYTHON_VERSION}-buster
-RUN pip install pytest isort
+
+RUN if echo ${IMAGE} | grep -q "amazon"; then \
+      yum update -y && yum install -y python3-pip; \
+    elif echo ${IMAGE} | grep -q "centos"; then \
+      curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && \
+      python get-pip.py; \
+    fi
+
+RUN ${PIP} install pytest
+
 # Only install black on Python 3.x as it doesn't exist on 2.x
-RUN if [ $(echo ${PYTHON_VERSION} | cut -d. -f1) -ge 3 ]; then pip install black; fi
+RUN if [ $(${PYTHON_VERSION}) -ge 3 ]; then ${PIP} install black isort; fi
+
 WORKDIR /app
