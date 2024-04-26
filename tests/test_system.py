@@ -1,14 +1,14 @@
 import os
 import sys
+from optparse import Values
 
 import pytest
-from optparse import Values
 
 # Add the parent directory to the path so we can import the latest version of the script
 oom_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, oom_dir)
 
-from oom_investigate import System, validate_options, run
+from oom_investigate import System, run, validate_options
 
 # Ignore DeprecationWarning and PendingDeprecationWarning warnings
 pytest.mark.filterwarnings("ignore::DeprecationWarning")
