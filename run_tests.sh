@@ -68,4 +68,4 @@ case "$COMMAND" in
 esac
 
 # Clean up
-docker compose down 2&>1 > /dev/null
+docker compose down 2>&1 > /dev/null
