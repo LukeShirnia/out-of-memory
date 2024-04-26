@@ -290,6 +290,10 @@ class System(Printer):
         if len(self.log_files) == 1 and "journald" in self.log_files[0]:
             self.journalctl = True
             return "journald"
+        if not self.log_files:
+            return (
+                "No log files found on system. You might need to manually specify one."
+            )
         return self.log_files[0]
 
     def search_log_dir(self, log_file):
