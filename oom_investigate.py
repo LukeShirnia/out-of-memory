@@ -888,7 +888,7 @@ def run(system, options):
     return sys.exit(0)
 
 
-def validate_options(options, system):
+def validate_options(system, options):
     """Function to validate the options provided by the user"""
     # Check if the user has specified more than one option
     if (
@@ -896,7 +896,10 @@ def validate_options(options, system):
         > 1
     ):
         print(
-            "Error: Please specify only a single option; a log file, dmesg or journalctl"
+            "Error: Please specify only a single option; a log file, dmesg or journalctl."
+            "You provided:\n- File: {}\n- journalctl: {}\n- dmesg: {}".format(
+                options.file, options.journalctl, options.dmesg
+            )
         )
         return sys.exit(1)
 
@@ -925,7 +928,7 @@ def validate_options(options, system):
             return sys.exit(1)
         system.log_to_use = options.file
 
-    return
+    return system
 
 
 def main():
@@ -1001,7 +1004,7 @@ def main():
     system = System()
 
     # Validate the options provided by the user and the log file
-    validate_options(options, system)
+    system = validate_options(system, options)
 
     # Print the script header
     main_header()
