@@ -26,6 +26,7 @@ class TestSystem:
             "dmesg": False,
             "quick": False,
             "version": None,
+            "show_all": False
         }
     )
 
@@ -40,6 +41,10 @@ class TestSystem:
         # Test specific functionality when '-f messages' is passed
         options = self.values
         options.file = "tests/assets/logs/messages"
+        # While we're here, we might as well test the --all functionality so we don't have to pass
+        # the large log file too many times
+        options.show_all = True
+
         with pytest.raises(SystemExit) as ex:
             self.system.log_to_use = options.file
             run(self.system, options)
@@ -47,6 +52,9 @@ class TestSystem:
 
         out, _ = capsys.readouterr()
         assert "Using Log File: \x1b[0m\x1b[1;32mtests/assets/logs/messages" in out
+        assert "OOM Incidents: \x1b[0m\x1b[1;31m19\x1b[0m\n" in out
+        assert "OOM Incident: \x1b[0m\x1b[0;96m19\x1b[0m" in out
+        assert "Displaying all OOM incidents:" in out
 
     def test_default_system_log(self):
         # Test default system log file

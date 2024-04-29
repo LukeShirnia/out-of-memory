@@ -447,7 +447,7 @@ class OOMAnalyzer(Printer):
                 if not self._system_ram:
                     ram = self.get_ram_from_logs(line)
                     if ram:
-                        self._system_ram = ram
+                        self._system_ram = round(ram)
                 # Start of a new OOM incident
                 if self.is_oom_start(line):
                     line = self.strip_brackets_pid(line)
@@ -715,11 +715,10 @@ class OOMAnalyzer(Printer):
 
 
 def run(system, options):
-    show_counter, reverse, quick = (
-        options.show_counter,
-        options.reverse,
-        options.quick,
-    )
+    reverse, quick = options.reverse, options.quick
+
+    # Account for --all flag
+    show_counter = -1 if options.show_all else options.show_counter
 
     # Parse the log file and extract OOM incidents
     analyzer = OOMAnalyzer(system)
@@ -791,7 +790,7 @@ def run(system, options):
         elif not reverse:
             last_incident = oom_instance
 
-        if index < show_counter:
+        if show_counter == -1 or index < show_counter:
             sliced_oom_instance_numbers.append(oom_instance["incident_number"])
             oom_lines.extend(analyzer.print_pretty_oom_instance(oom_instance))
         # Find the largest incident
@@ -870,7 +869,8 @@ def run(system, options):
     lines.append(system._header("         OOM Incidents"))
     lines.append(system.spacer)
     lines.append("")
-    lines.append("Displaying {} OOM incidents:".format(show_counter))
+    show = "all" if show_counter == -1 else show_counter
+    lines.append("Displaying {} OOM incidents:".format(show))
     lines.append("")
 
     # Display OOM incidents based on the show_counter and reverse (if provided)
@@ -879,7 +879,7 @@ def run(system, options):
     lines.append("")
 
     # Only display this message if there are more oom incidents than the show_counter
-    if total_incidents > show_counter:
+    if total_incidents > show_counter and show_counter != -1:
         lines.append("")
         lines.append(
             system._warning(
@@ -952,6 +952,15 @@ def main():
         metavar="Show",
         default=5,
         help="Override the default number of OOM incidents to show",
+    )
+    parser.add_option(
+        "-a",
+        "--all",
+        dest="show_all",
+        default=False,
+        action="store_true",
+        help="Show all OOM incidents found in the log file. If both -a and -s are provided, "
+        "-a will take precedence.",
     )
     parser.add_option(
         "-r",
