@@ -180,6 +180,10 @@ class System(Printer):
         return self._system
 
     def parse_os_release(self):
+        """
+        This is a fallback, fallback method to get the distro and version information for OS's we
+        can't get from the platform or distro modules.
+        """
         distro = version = None
         release_id_map = {
             "ol": "oracle",
@@ -201,6 +205,7 @@ class System(Printer):
         return distro, version, None
 
     def get_distro_info(self):
+        """Method to get the distro and version information for the system"""
         python_version = sys.version_info
         self.python_version = "{}.{}.{}".format(
             python_version.major, python_version.minor, python_version.micro
@@ -224,7 +229,8 @@ class System(Printer):
             ):
                 dists = platform_info._supported_dists + (
                     "system",
-                )  # pylint: disable=protected-access  # Added to include Amazon and Rocky Linux Support
+                )  # pylint: disable=protected-access
+                # Added to include Amazon and Rocky Linux Support
                 return platform_info.linux_distribution(supported_dists=dists)
             return platform_info_tuple
         except AttributeError:
@@ -890,43 +896,36 @@ def run(system, options):
 
 def validate_options(system, options):
     """Function to validate the options provided by the user"""
-    # Check if the user has specified more than one option
-    if (
-        sum(x is not False for x in [options.file, options.journalctl, options.dmesg])
-        > 1
-    ):
+    valid_options = [options.file, options.journalctl, options.dmesg]
+    active_options = [opt for opt in valid_options if opt]
+
+    # Ensure only one logging option is specified
+    if len(active_options) > 1:
         print(
-            "Error: Please specify only a single option; a log file, dmesg or journalctl."
-            "You provided:\n- File: {}\n- journalctl: {}\n- dmesg: {}".format(
+            "Error: Please specify only a single option; a log file, dmesg or journalctl.\n"
+            "You provided:\n- File: {}\n- Journalctl: {}\n- Dmesg: {}".format(
                 options.file, options.journalctl, options.dmesg
             )
         )
-        return sys.exit(1)
+        sys.exit(1)
 
-    # Instantiate the System class and validate the default log file
-    try:
-        system.log_to_use = system.log_files[0]
-    except IndexError:
-        # Only return an error if the user has not specified a log file
-        if not options.file:
-            print(
-                "Error: Unable to find log file for this Operating System. "
-                "Please specify a log file with the -f option"
-            )
-            return sys.exit(1)
-
-    # Use journalctl if option is set. Journalctl will also be used if the system default is
-    # journalctl
-    system.use_journalctl = options.journalctl
-    # Use dmesg if option is set. Dmesg will also be used if the system default is dmesg
-    system.use_dmesg = options.dmesg
-
-    # Check if the user has specified a valid log file
-    if options.file:
+    if options.journalctl:
+        system.use_journalctl = options.journalctl
+    elif options.dmesg:
+        system.use_dmesg = options.dmesg
+    elif options.file:
+        # Check if the user has specified a valid log file
         if not os.path.isfile(options.file):
-            print("File {} does not exist".format(options.file))
-            return sys.exit(1)
+            raise FileNotFoundError("File {} does not exist".format(options.file))
         system.log_to_use = options.file
+
+    if not active_options:
+        if not system.log_files:
+            raise FileNotFoundError(
+                "Error: Unable to find log file for this Operating System. "
+                "Please specify a log file with the -f option."
+            )
+        system.log_to_use = system.log_files[0]
 
     return system
 
