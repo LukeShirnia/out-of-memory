@@ -916,15 +916,17 @@ def validate_options(system, options):
     elif options.file:
         # Check if the user has specified a valid log file
         if not os.path.isfile(options.file):
-            raise FileNotFoundError("File {} does not exist".format(options.file))
+            print("File {} does not exist".format(options.file))
+            sys.exit(1)
         system.log_to_use = options.file
 
     if not active_options:
         if not system.log_files:
-            raise FileNotFoundError(
+            print(
                 "Error: Unable to find log file for this Operating System. "
                 "Please specify a log file with the -f option."
             )
+            sys.exit(1)
         system.log_to_use = system.log_files[0]
 
     return system
