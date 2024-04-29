@@ -52,7 +52,7 @@ There are 3 methods of running the script:
 ## Usage:
 
 
-![help.png output](docs/images/help.png)
+![usage.png output](docs/images/usage.png)
 
 
 ## Output Information:
