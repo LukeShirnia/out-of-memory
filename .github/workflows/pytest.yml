@@ -46,4 +46,22 @@ jobs:
       run: |
         docker run --rm -v ${{ github.workspace }}:/app \
         ${{ env.REPOSITORY }}:${{ matrix.distro }}-pytest \
-        ${{ steps.setup.outputs.command }} -v tests/test_system.py -p no:cacheprovider
+        ${{ steps.setup.outputs.command }} -v tests/test_validate_options.py -p no:cacheprovider
+
+  test-systems-with-logs:
+    # We only want to pull large files once, so lets run this on a single runner
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro: ["amazonlinux"]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        lfs: true
+
+    - name: Run system tests with logs
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/app \
+        ${{ env.REPOSITORY }}:${{ matrix.distro }}-pytest \
+        pytest -v tests/test_large_log.py -p no:cacheprovider -s

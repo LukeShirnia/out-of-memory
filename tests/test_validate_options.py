@@ -26,7 +26,7 @@ class TestSystem:
             "dmesg": False,
             "quick": False,
             "version": None,
-            "show_all": False
+            "show_all": False,
         }
     )
 
