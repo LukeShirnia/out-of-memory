@@ -52,7 +52,7 @@ class TestSystem:
 
         out, _ = capsys.readouterr()
         assert "Using Log File: \x1b[0m\x1b[1;32mtests/assets/logs/messages" in out
-        assert "OOM Incidents: \x1b[0m\x1b[1;31m19\x1b[0m\n" in out
+        assert "OOM Incidents: \x1b[0m\x1b[1;31m19\x1b[0m" in out
         assert "OOM Incident: \x1b[0m\x1b[0;96m19\x1b[0m" in out
         assert "Displaying all OOM incidents:" in out
 

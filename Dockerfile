@@ -5,7 +5,8 @@ ARG PIP
 ARG PYTHON_VERSION
 
 RUN if echo ${IMAGE} | grep -q "amazon"; then \
-      yum update -y && yum install -y python3-pip; \
+      # Amazon Linux doesn't have rsyslog installed by default
+      yum update -y && yum install -y python3-pip rsyslog; \
     elif echo ${IMAGE} | grep -q "centos"; then \
       curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && \
       python get-pip.py; \

@@ -32,7 +32,7 @@ class TestSystem:
 
     # Skip tests on Amazon Linux and CentOS because they don't have dmesg
     @pytest.mark.skipif(
-        System().get_distro_info()[0] in ["amzn", "centos"],
+        System().get_distro_info()[0] in ["centos"],
         reason="No dmesg in arch container",
     )
     def test_dmesg(self, capsys):
