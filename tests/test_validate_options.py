@@ -26,6 +26,7 @@ class TestSystem:
             "dmesg": False,
             "quick": False,
             "version": None,
+            "show_all": False
         }
     )
 
@@ -68,3 +69,17 @@ class TestSystem:
         assert "- File: tests/assets/logs/messages" in out
         assert "- Journalctl: True" in out
         assert "- Dmesg: True" in out
+
+    def test_invalid_file(self, capsys):
+        # Test invalid file
+        options = self.values
+        options.dmesg = False
+        options.journalctl = False
+        options.file = "tests/assets/logs/invalid"
+
+        with pytest.raises(SystemExit) as ex:
+            validate_options(self.system, options)
+            assert ex.code == 1
+
+        out, _ = capsys.readouterr()
+        assert "File tests/assets/logs/invalid does not exist" in out
