@@ -29,6 +29,11 @@ class TestSystem:
         }
     )
 
+    # Skip tests on Amazon Linux and CentOS because they don't have dmesg
+    @pytest.mark.skipif(
+        System().get_distro_info()[0] in ["amzn", "centos"],
+        reason="No dmesg in arch container",
+    )
     def test_dmesg(self, capsys):
         # Test journalctl log
         options = self.values
@@ -61,5 +66,5 @@ class TestSystem:
             in out
         )
         assert "- File: tests/assets/logs/messages" in out
-        assert "- journalctl: True" in out
-        assert "- dmesg: True" in out
+        assert "- Journalctl: True" in out
+        assert "- Dmesg: True" in out

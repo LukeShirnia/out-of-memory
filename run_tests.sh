@@ -34,7 +34,7 @@ case "$COMMAND" in
         for version in "${python_versions[@]}"
         do
             echo "Running $COMMAND in $version"
-            docker compose run --rm $version $COMMAND -v --ignore=tests/test_system.py
+            docker compose run --rm $version $COMMAND -v --ignore=tests/test_system.py --ignore=tests/test_validate_options.py
         done
 
         # Part 2
@@ -47,7 +47,7 @@ case "$COMMAND" in
             if [ "$distro" == "osx" ]; then
                 COMMAND="python -m pytest"
             fi
-            docker compose run --rm $distro $COMMAND -v tests/test_system.py -p no:cacheprovider
+            docker compose run --rm $distro $COMMAND -v tests/test_system.py tests/test_validate_options.py -p no:cacheprovider
         done
         ;;
     black|isort)
