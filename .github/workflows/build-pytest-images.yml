@@ -24,15 +24,16 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    - name: Pull Docker images (if exists)
-      run: |
-        docker-compose config | grep 'image:' | awk '{print $2}' | while read image; do
-          base_image_name=$(echo $image | awk -F: '{print $1}')
-          version_tag=$(echo $image | awk -F: '{print $2}')
-          existing_tag="${{ env.REPOSITORY }}:${base_image_name#*/}"
-          echo "Trying to pull existing image $existing_tag"
-          docker pull $existing_tag || true  # Continue even if pull fails
-        done
+    # Don't pull for now
+    # - name: Pull Docker images (if exists)
+    #   run: |
+    #     docker-compose config | grep 'image:' | awk '{print $2}' | while read image; do
+    #       base_image_name=$(echo $image | awk -F: '{print $1}')
+    #       version_tag=$(echo $image | awk -F: '{print $2}')
+    #       existing_tag="${{ env.REPOSITORY }}:${base_image_name#*/}"
+    #       echo "Trying to pull existing image $existing_tag"
+    #       docker pull $existing_tag || true  # Continue even if pull fails
+    #     done
 
     - name: Build Docker images
       run: |
