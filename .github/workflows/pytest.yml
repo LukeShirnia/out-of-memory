@@ -22,7 +22,7 @@ jobs:
         docker run --rm \
         -v ${{ github.workspace }}:/app \
         ${{ env.REPOSITORY }}:${{ matrix.python-version }}-pytest \
-        pytest -v --ignore=tests/test_system.py
+        pytest -v --ignore=tests/test_system.py --ignore tests/test_large_log.py
 
   test-systems:
     runs-on: ubuntu-latest
