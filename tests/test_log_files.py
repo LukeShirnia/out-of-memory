@@ -30,12 +30,17 @@ class TestSystem:
         }
     )
 
-    def test_file_processing(self, capsys):
-        # Test specific functionality when '-f messages' is passed
+    @pytest.mark.parametrize(
+        "log_file, expected_oom_count, expected_oom_incident",
+        [
+            ("tests/assets/logs/messages", 19, 19),
+            ("tests/assets/logs/messages.1", 1, 1),
+        ]
+    )
+    def test_file_processing(self, log_file, expected_oom_count, expected_oom_incident, capsys):
+        # Test functionality with different log files and expected results
         options = self.values
-        options.file = "tests/assets/logs/messages"
-        # While we're here, we might as well test the --all functionality so we don't have to pass
-        # the large log file too many times
+        options.file = log_file
         options.show_all = True
 
         with pytest.raises(SystemExit) as ex:
@@ -44,7 +49,7 @@ class TestSystem:
             assert ex.code == 0
 
         out, _ = capsys.readouterr()
-        assert "Using Log File: \x1b[0m\x1b[1;32mtests/assets/logs/messages" in out
-        assert "OOM Incidents: \x1b[0m\x1b[1;31m19\x1b[0m" in out
-        assert "OOM Incident: \x1b[0m\x1b[0;96m19\x1b[0m" in out
+        assert "Using Log File: \x1b[0m\x1b[1;32m{0}".format(log_file) in out
+        assert "OOM Incidents: \x1b[0m\x1b[1;31m{0}\x1b[0m".format(expected_oom_count) in out
+        assert "OOM Incident: \x1b[0m\x1b[0;96m{0}\x1b[0m".format(expected_oom_incident) in out
         assert "Displaying all OOM incidents:" in out
