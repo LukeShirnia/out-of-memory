@@ -506,7 +506,7 @@ class OOMAnalyzer(Printer):
 
     def is_oom_start(self, line):
         """Check if the line is the start of a new OOM incident"""
-        return "[ pid ]" in line
+        return bool(re.search(r'\[\s*pid\s*\]', line))
 
     def is_process_line(self, line):
         return re.match(r".*\[\s*\d+\]\s*\d+\s+\d+\s+\d+\s+.*", line)
