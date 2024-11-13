@@ -553,7 +553,7 @@ class OOMAnalyzer(Printer):
 
     def extract_timestamp(self, line):
         syslog_pattern = r"(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
-        dmesg_pattern = r"\[\s*(\d+\.\d+)\]"
+        dmesg_pattern = r"^\[?\s*(\d+\.\d+)\]?"
         journalctl_pattern = (
             r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{6})?(?:\+|-)\d{4})"
         )
