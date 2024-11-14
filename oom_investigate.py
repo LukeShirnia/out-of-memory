@@ -27,7 +27,7 @@ warnings.filterwarnings(
 )  # Hide platform.dist() related deprecation warnings
 
 
-__version__ = "2.0.0"
+__version__ = "2.0.2"
 
 
 def std_exceptions(etype, value, tb):
