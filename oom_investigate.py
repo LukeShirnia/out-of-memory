@@ -431,7 +431,7 @@ class OOMAnalyzer(Printer):
         except StopIteration:
             return
 
-        state = {"last_line": first_line, "found_killed": False}
+        state = {"found_killed": False}
 
         # Extract the start timestamp from the line
         if self.log_start_time is None:
@@ -440,9 +440,6 @@ class OOMAnalyzer(Printer):
         def generator():
             current_instance = None
             for line in log_generator:
-                # Used to extract the end time of the log. Only assign if line is not empty
-                if line.strip():
-                    state["last_line"] = line
                 # Extract the ram from the system logs if possible
                 if not self._system_ram:
                     ram = self.get_ram_from_logs(line)
