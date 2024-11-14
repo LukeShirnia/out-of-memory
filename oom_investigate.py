@@ -495,10 +495,6 @@ class OOMAnalyzer(Printer):
                 )
                 yield current_instance
 
-        # Extract the end timestamp from the last line
-        if self.log_end_time is None:
-            self.log_end_time = self.extract_timestamp(state["last_line"])
-
         return generator()
 
     def strip_brackets_pid(self, log_line):
@@ -562,23 +558,30 @@ class OOMAnalyzer(Printer):
         dmesg_match = re.search(dmesg_pattern, line)
         journalctl_match = re.search(journalctl_pattern, line)
 
+        time = None
         if syslog_match:
             timestamp_str = syslog_match.group(1)
-            dt = datetime.datetime.strptime(timestamp_str, "%b %d %H:%M:%S")
-            return dt
+            time = datetime.datetime.strptime(timestamp_str, "%b %d %H:%M:%S")
         elif dmesg_match:
             timestamp_str = dmesg_match.group(1)
-            dt = datetime.datetime.fromtimestamp(float(timestamp_str))
-            return dt
+            time = datetime.datetime.fromtimestamp(float(timestamp_str))
         elif journalctl_match:
             timestamp_str = journalctl_match.group(1)
             try:
-                dt = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+                time = datetime.datetime.strptime(
+                    timestamp_str, "%Y-%m-%dT%H:%M:%S.%f%z"
+                )
             except ValueError:
-                dt = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
-            return dt
-        else:
-            return None
+                time = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
+
+        # Extract the end timestamp from the last line
+        if self.log_end_time is None and time:
+            self.log_end_time = time
+
+        if self.log_end_time and time > self.log_end_time:
+            self.log_end_time = time
+
+        return time
 
     def sorted_results(self, oom_processes_list):
         """Method to sort the OOM processes by RSS"""
@@ -752,12 +755,11 @@ def run(system, options):
     # Find the largest incident
     largest_incident = None
     oom_instances = analyzer.analyze()
-    lines.extend(analyzer.print_pretty_log_info())
 
     # Exit early if no OOM incidents were found
     try:
         first_item = next(oom_instances)
-    except StopIteration:
+    except (StopIteration, TypeError):
         source = analyzer.get_log_source()
         if source == "journalctl":
             msg = "No OOM incidents found! Journalctl has no OOM incidents."
@@ -769,6 +771,7 @@ def run(system, options):
                 + analyzer.log_file
                 + " has no OOM incidents."
             )
+        lines.extend(analyzer.print_pretty_log_info())
         lines.append(system._ok(msg))
         lines.append("")
         print("\n".join(lines))
@@ -813,6 +816,7 @@ def run(system, options):
     total_incidents = last_incident["incident_number"]
 
     # OOM Overview
+    lines.extend(analyzer.print_pretty_log_info())
     lines.append(system.spacer)
     lines.append("")
     lines.append("")
