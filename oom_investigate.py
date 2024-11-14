@@ -506,7 +506,7 @@ class OOMAnalyzer(Printer):
 
     def is_oom_start(self, line):
         """Check if the line is the start of a new OOM incident"""
-        return bool(re.search(r'\[\s*pid\s*\]', line))
+        return bool(re.search(r"\[\s*pid\s*\]", line))
 
     def is_process_line(self, line):
         return re.match(r".*\[\s*\d+\]\s*\d+\s+\d+\s+\d+\s+.*", line)
@@ -632,10 +632,13 @@ class OOMAnalyzer(Printer):
             self._warning("OOM Incident: ")
             + self._notice(str(oom_instance["incident_number"]))
         )
-        lines.append(
-            "Start Time: "
-            + self._ok(oom_instance["start_time"].strftime("%a %b %d %X"))
+        # Don't hard fail if we are unable to extract the date/time from the log files
+        start_time = (
+            self._ok(oom_instance["start_time"].strftime("%a %b %d %X"))
+            if oom_instance.get("start_time")
+            else self._critical("Unable to extract datetime")
         )
+        lines.append("Start Time: " + start_time)
         lines.append("System RAM: " + self._ok(str(oom_instance["system_ram"]) + " MB"))
         lines.append(
             "Total RAM at Incident: "
