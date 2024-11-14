@@ -321,8 +321,8 @@ class System(Printer):
     def get_ram_info(self):
         try:
             mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
-            mem_gib = mem_bytes / (1024.0**3)
-            return round(mem_gib, 2)
+            mem_mib = mem_bytes / (1024.0**2)
+            return round(mem_mib)
         except ValueError:
             return None
 
@@ -337,7 +337,8 @@ class System(Printer):
             self._header("Python Version: ") + self._notice(self.python_version)
         )
         self._lines.append(
-            self._header("RAM: ") + self._notice("{} GiB".format(self.ram))
+            self._header("RAM: ")
+            + self._notice("{} GiB".format(round(self.ram / 1024)))
         )
         self._lines += [
             self._header("Default System Log: ") + self._notice(self.default_system_log)
@@ -366,6 +367,7 @@ class OOMAnalyzer(Printer):
         self.oom_counter = 0
         self._get_log_source = None
         self._system_ram = None
+        self._last_instance_system_ram = None
 
     def get_log_source(self, log_file=None, journalctl=None, dmesg=None):
         """Method to get the log source, allowing for manual override"""
@@ -445,7 +447,7 @@ class OOMAnalyzer(Printer):
                     ram = self.get_ram_from_logs(line)
                     if ram:
                         self._system_ram = round(ram)
-                # Start of a new OOM incident
+                # This is both the start of a new oom incident and the end of the previous one.
                 if self.is_oom_start(line):
                     line = self.strip_brackets_pid(line)
                     self.oom_counter += 1
@@ -458,6 +460,7 @@ class OOMAnalyzer(Printer):
                             ",",
                         )
                         yield current_instance
+                        self._last_instance_system_ram = self._system_ram
                         self._system_ram = None
                         state["found_killed"] = False
                     current_instance = {
@@ -486,9 +489,12 @@ class OOMAnalyzer(Printer):
                         self.parse_killed_process_line(line)
                     )
 
+            # Yield the last OOM incident
             if current_instance:
                 current_instance["system_ram"] = (
-                    self._system_ram if self._system_ram else self.system.ram
+                    "{:,.0f}".format(self._last_instance_system_ram)
+                    if self._last_instance_system_ram
+                    else "{:,.0f}".format(self.system.ram)
                 )
                 yield current_instance
 
