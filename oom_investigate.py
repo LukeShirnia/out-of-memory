@@ -489,6 +489,7 @@ class OOMAnalyzer(Printer):
                         self.parse_killed_process_line(line)
                     )
 
+            self.log_end_time = self.extract_timestamp(line)
             # Yield the last OOM incident
             if current_instance:
                 current_instance["system_ram"] = (
@@ -576,13 +577,6 @@ class OOMAnalyzer(Printer):
                 )
             except ValueError:
                 time = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
-
-        # Extract the end timestamp from the last line
-        if self.log_end_time is None and time:
-            self.log_end_time = time
-
-        if self.log_end_time and time > self.log_end_time:
-            self.log_end_time = time
 
         return time
 
