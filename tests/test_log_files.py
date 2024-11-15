@@ -31,13 +31,33 @@ class TestSystem:
     )
 
     @pytest.mark.parametrize(
-        "log_file, expected_oom_count, expected_oom_incident",
+        "log_file, expected_oom_count, expected_oom_incident, start_time, end_time",
         [
-            ("tests/assets/logs/messages", 19, 19),
-            ("tests/assets/logs/messages.1", 1, 1),
-        ]
+            (
+                "tests/assets/logs/messages",
+                19,
+                19,
+                "Log Start Time: \x1b[0m\x1b[0;96mMon Jun 18 02:23:48",
+                "Log End Time: \x1b[0m\x1b[0;96mWed Jun 20 20:33:22",
+            ),
+            (
+                "tests/assets/logs/messages.1",
+                1,
+                1,
+                "Log Start Time: \x1b[0m\x1b[0;96mSat Sep 29 08:12:34",
+                "Log End Time: \x1b[0m\x1b[0;96mSat Sep 29 08:12:34",
+            ),
+        ],
     )
-    def test_file_processing(self, log_file, expected_oom_count, expected_oom_incident, capsys):
+    def test_file_processing(
+        self,
+        log_file,
+        expected_oom_count,
+        expected_oom_incident,
+        start_time,
+        end_time,
+        capsys,
+    ):
         # Test functionality with different log files and expected results
         options = self.values
         options.file = log_file
@@ -50,6 +70,14 @@ class TestSystem:
 
         out, _ = capsys.readouterr()
         assert "Using Log File: \x1b[0m\x1b[1;32m{0}".format(log_file) in out
-        assert "OOM Incidents: \x1b[0m\x1b[1;31m{0}\x1b[0m".format(expected_oom_count) in out
-        assert "OOM Incident: \x1b[0m\x1b[0;96m{0}\x1b[0m".format(expected_oom_incident) in out
+        assert (
+            "OOM Incidents: \x1b[0m\x1b[1;31m{0}\x1b[0m".format(expected_oom_count)
+            in out
+        )
+        assert (
+            "OOM Incident: \x1b[0m\x1b[0;96m{0}\x1b[0m".format(expected_oom_incident)
+            in out
+        )
         assert "Displaying all OOM incidents:" in out
+        assert start_time in out
+        assert end_time in out
