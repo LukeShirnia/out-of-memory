@@ -2,10 +2,9 @@ name: Main
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
       branches:
-        - main
-        - v2
+        - master
 
 jobs:
   detect-file-changes:
