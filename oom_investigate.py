@@ -849,7 +849,7 @@ def run(system, options):
         + system._warning("Incident Number " + str(largest_incident["incident_number"]))
     )
     lines.append(
-        "System Ram: " + system._warning(str(largest_incident["system_ram"]) + " MB")
+        "Available RAM: " + system._warning(str(largest_incident["system_ram"]) + " MB")
     )
     lines.append(
         "Memory Used In Incident: "
