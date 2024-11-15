@@ -49,6 +49,5 @@ jobs:
   pytest:
       needs:
           - detect-file-changes
-          - build-pytest-images
       uses: ./.github/workflows/pytest.yml
       if: needs.detect-file-changes.outputs.oom_investigate == 'true'
