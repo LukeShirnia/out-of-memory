@@ -37,17 +37,17 @@ class TestSystem:
                 "tests/assets/logs/messages",
                 19,
                 19,
-                "System RAM: \x1b[1;32m32,768 MB",
-                "Log Start Time: \x1b[0m\x1b[0;96mMon Jun 18 02:23:48",
-                "Log End Time: \x1b[0m\x1b[0;96mWed Jun 20 20:33:22",
+                "32,768 MB",
+                "Mon Jun 18 02:23:48",
+                "Wed Jun 20 20:33:22",
             ),
             (
                 "tests/assets/logs/messages.1",
                 1,
                 1,
-                "System RAM: \x1b[1;32m31,496 MB",
-                "Log Start Time: \x1b[0m\x1b[0;96mSat Sep 29 08:12:34",
-                "Log End Time: \x1b[0m\x1b[0;96mSat Sep 29 08:12:34",
+                "31,496 MB",
+                "Sat Sep 29 08:12:34",
+                "Sat Sep 29 08:12:34",
             ),
         ],
     )
@@ -82,6 +82,6 @@ class TestSystem:
             in out
         )
         assert "Displaying all OOM incidents:" in out
-        assert system_ram in out
-        assert start_time in out
-        assert end_time in out
+        assert "System RAM: \x1b[1;32m{0}".format(system_ram) in out
+        assert "Log Start Time: \x1b[0m\x1b[0;96m{0}".format(start_time) in out
+        assert "Log End Time: \x1b[0m\x1b[0;96m{0}".format(end_time) in out

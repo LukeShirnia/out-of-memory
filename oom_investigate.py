@@ -456,9 +456,8 @@ class OOMAnalyzer(Printer):
                     self.rss_column = line.split().index("rss")
                     # If we've already started an OOM incident, yield it and start a new one
                     if current_instance:
-                        current_instance["system_ram"] = format(
-                            self._system_ram if self._system_ram else self.system.ram,
-                            ",",
+                        current_instance["system_ram"] = "{:,.0f}".format(
+                            self._system_ram if self._system_ram else self.system.ram
                         )
                         yield current_instance
                         self._last_instance_system_ram = self._system_ram
@@ -495,10 +494,10 @@ class OOMAnalyzer(Printer):
 
             # Yield the last OOM incident
             if current_instance:
-                current_instance["system_ram"] = (
-                    "{:,.0f}".format(self._last_instance_system_ram)
+                current_instance["system_ram"] = "{:,.0f}".format(
+                    self._last_instance_system_ram
                     if self._last_instance_system_ram
-                    else "{:,.0f}".format(self.system.ram)
+                    else self.system.ram
                 )
                 yield current_instance
 
@@ -531,7 +530,7 @@ class OOMAnalyzer(Printer):
         # as count of 4K pages.
         m = re.search("([0-9]+) pages RAM", line)
         if m:
-            return int(m.group(1)) * 4 / 1024
+            return int(m.group(1)) * 4 / 1024.0
         # Alternatively if running inside a cgroup then use the configured
         # memory limit.
         m = re.search("memory: usage [0-9]+kB, limit ([0-9]+)kB", line)
