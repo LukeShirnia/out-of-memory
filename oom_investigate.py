@@ -441,6 +441,7 @@ class OOMAnalyzer(Printer):
 
         def generator():
             current_instance = None
+            line = None
             for line in log_generator:
                 # Extract the ram from the system logs if possible
                 if not self._system_ram:
@@ -489,7 +490,9 @@ class OOMAnalyzer(Printer):
                         self.parse_killed_process_line(line)
                     )
 
-            self.log_end_time = self.extract_timestamp(line)
+            if line:
+                self.log_end_time = self.extract_timestamp(line)
+
             # Yield the last OOM incident
             if current_instance:
                 current_instance["system_ram"] = (
