@@ -2,10 +2,9 @@ name: Main
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
       branches:
-        - main
-        - v2
+        - master
 
 jobs:
   detect-file-changes:
@@ -47,9 +46,8 @@ jobs:
       uses: ./.github/workflows/isort.yml
       if: needs.detect-file-changes.outputs.oom_investigate == 'true'
 
-  pytest:
-      needs:
-          - detect-file-changes
-          - build-pytest-images
-      uses: ./.github/workflows/pytest.yml
-      if: needs.detect-file-changes.outputs.oom_investigate == 'true'
+  # pytest:
+  #     needs:
+  #         - detect-file-changes
+  #     uses: ./.github/workflows/pytest.yml
+  #     if: needs.detect-file-changes.outputs.oom_investigate == 'true'

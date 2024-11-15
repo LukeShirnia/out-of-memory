@@ -27,7 +27,7 @@ warnings.filterwarnings(
 )  # Hide platform.dist() related deprecation warnings
 
 
-__version__ = "2.0.0"
+__version__ = "2.0.2"
 
 
 def std_exceptions(etype, value, tb):
@@ -321,8 +321,8 @@ class System(Printer):
     def get_ram_info(self):
         try:
             mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
-            mem_gib = mem_bytes / (1024.0**3)
-            return round(mem_gib, 2)
+            mem_mib = mem_bytes / (1024.0**2)
+            return round(mem_mib)
         except ValueError:
             return None
 
@@ -337,7 +337,8 @@ class System(Printer):
             self._header("Python Version: ") + self._notice(self.python_version)
         )
         self._lines.append(
-            self._header("RAM: ") + self._notice("{} GiB".format(self.ram))
+            self._header("RAM: ")
+            + self._notice("{} GiB".format(round(self.ram / 1024)))
         )
         self._lines += [
             self._header("Default System Log: ") + self._notice(self.default_system_log)
@@ -366,6 +367,7 @@ class OOMAnalyzer(Printer):
         self.oom_counter = 0
         self._get_log_source = None
         self._system_ram = None
+        self._last_instance_system_ram = None
 
     def get_log_source(self, log_file=None, journalctl=None, dmesg=None):
         """Method to get the log source, allowing for manual override"""
@@ -431,7 +433,7 @@ class OOMAnalyzer(Printer):
         except StopIteration:
             return
 
-        state = {"last_line": first_line, "found_killed": False}
+        state = {"found_killed": False}
 
         # Extract the start timestamp from the line
         if self.log_start_time is None:
@@ -439,16 +441,14 @@ class OOMAnalyzer(Printer):
 
         def generator():
             current_instance = None
+            line = None
             for line in log_generator:
-                # Used to extract the end time of the log. Only assign if line is not empty
-                if line.strip():
-                    state["last_line"] = line
                 # Extract the ram from the system logs if possible
                 if not self._system_ram:
                     ram = self.get_ram_from_logs(line)
                     if ram:
                         self._system_ram = round(ram)
-                # Start of a new OOM incident
+                # This is both the start of a new oom incident and the end of the previous one.
                 if self.is_oom_start(line):
                     line = self.strip_brackets_pid(line)
                     self.oom_counter += 1
@@ -456,11 +456,11 @@ class OOMAnalyzer(Printer):
                     self.rss_column = line.split().index("rss")
                     # If we've already started an OOM incident, yield it and start a new one
                     if current_instance:
-                        current_instance["system_ram"] = format(
-                            self._system_ram if self._system_ram else self.system.ram,
-                            ",",
+                        current_instance["system_ram"] = "{:,.0f}".format(
+                            self._system_ram if self._system_ram else self.system.ram
                         )
                         yield current_instance
+                        self._last_instance_system_ram = self._system_ram
                         self._system_ram = None
                         state["found_killed"] = False
                     current_instance = {
@@ -489,15 +489,17 @@ class OOMAnalyzer(Printer):
                         self.parse_killed_process_line(line)
                     )
 
+            if line:
+                self.log_end_time = self.extract_timestamp(line)
+
+            # Yield the last OOM incident
             if current_instance:
-                current_instance["system_ram"] = (
-                    self._system_ram if self._system_ram else self.system.ram
+                current_instance["system_ram"] = "{:,.0f}".format(
+                    self._last_instance_system_ram
+                    if self._last_instance_system_ram
+                    else self.system.ram
                 )
                 yield current_instance
-
-        # Extract the end timestamp from the last line
-        if self.log_end_time is None:
-            self.log_end_time = self.extract_timestamp(state["last_line"])
 
         return generator()
 
@@ -506,7 +508,7 @@ class OOMAnalyzer(Printer):
 
     def is_oom_start(self, line):
         """Check if the line is the start of a new OOM incident"""
-        return bool(re.search(r'\[\s*pid\s*\]', line))
+        return bool(re.search(r"\[\s*pid\s*\]", line))
 
     def is_process_line(self, line):
         return re.match(r".*\[\s*\d+\]\s*\d+\s+\d+\s+\d+\s+.*", line)
@@ -528,7 +530,7 @@ class OOMAnalyzer(Printer):
         # as count of 4K pages.
         m = re.search("([0-9]+) pages RAM", line)
         if m:
-            return int(m.group(1)) * 4 / 1024
+            return int(m.group(1)) * 4 / 1024.0
         # Alternatively if running inside a cgroup then use the configured
         # memory limit.
         m = re.search("memory: usage [0-9]+kB, limit ([0-9]+)kB", line)
@@ -553,7 +555,7 @@ class OOMAnalyzer(Printer):
 
     def extract_timestamp(self, line):
         syslog_pattern = r"(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
-        dmesg_pattern = r"\[\s*(\d+\.\d+)\]"
+        dmesg_pattern = r"^\[?\s*(\d+\.\d+)\]?"
         journalctl_pattern = (
             r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{6})?(?:\+|-)\d{4})"
         )
@@ -562,23 +564,23 @@ class OOMAnalyzer(Printer):
         dmesg_match = re.search(dmesg_pattern, line)
         journalctl_match = re.search(journalctl_pattern, line)
 
+        time = None
         if syslog_match:
             timestamp_str = syslog_match.group(1)
-            dt = datetime.datetime.strptime(timestamp_str, "%b %d %H:%M:%S")
-            return dt
+            time = datetime.datetime.strptime(timestamp_str, "%b %d %H:%M:%S")
         elif dmesg_match:
             timestamp_str = dmesg_match.group(1)
-            dt = datetime.datetime.fromtimestamp(float(timestamp_str))
-            return dt
+            time = datetime.datetime.fromtimestamp(float(timestamp_str))
         elif journalctl_match:
             timestamp_str = journalctl_match.group(1)
             try:
-                dt = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+                time = datetime.datetime.strptime(
+                    timestamp_str, "%Y-%m-%dT%H:%M:%S.%f%z"
+                )
             except ValueError:
-                dt = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
-            return dt
-        else:
-            return None
+                time = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
+
+        return time
 
     def sorted_results(self, oom_processes_list):
         """Method to sort the OOM processes by RSS"""
@@ -632,10 +634,13 @@ class OOMAnalyzer(Printer):
             self._warning("OOM Incident: ")
             + self._notice(str(oom_instance["incident_number"]))
         )
-        lines.append(
-            "Start Time: "
-            + self._ok(oom_instance["start_time"].strftime("%a %b %d %X"))
+        # Don't hard fail if we are unable to extract the date/time from the log files
+        start_time = (
+            self._ok(oom_instance["start_time"].strftime("%a %b %d %X"))
+            if oom_instance.get("start_time")
+            else self._critical("Unable to extract datetime")
         )
+        lines.append("Start Time: " + start_time)
         lines.append("System RAM: " + self._ok(str(oom_instance["system_ram"]) + " MB"))
         lines.append(
             "Total RAM at Incident: "
@@ -749,12 +754,11 @@ def run(system, options):
     # Find the largest incident
     largest_incident = None
     oom_instances = analyzer.analyze()
-    lines.extend(analyzer.print_pretty_log_info())
 
     # Exit early if no OOM incidents were found
     try:
         first_item = next(oom_instances)
-    except StopIteration:
+    except (StopIteration, TypeError):
         source = analyzer.get_log_source()
         if source == "journalctl":
             msg = "No OOM incidents found! Journalctl has no OOM incidents."
@@ -766,6 +770,7 @@ def run(system, options):
                 + analyzer.log_file
                 + " has no OOM incidents."
             )
+        lines.extend(analyzer.print_pretty_log_info())
         lines.append(system._ok(msg))
         lines.append("")
         print("\n".join(lines))
@@ -810,6 +815,7 @@ def run(system, options):
     total_incidents = last_incident["incident_number"]
 
     # OOM Overview
+    lines.extend(analyzer.print_pretty_log_info())
     lines.append(system.spacer)
     lines.append("")
     lines.append("")
@@ -842,7 +848,7 @@ def run(system, options):
         + system._warning("Incident Number " + str(largest_incident["incident_number"]))
     )
     lines.append(
-        "System Ram: " + system._warning(str(largest_incident["system_ram"]) + " MB")
+        "Available RAM: " + system._warning(str(largest_incident["system_ram"]) + " MB")
     )
     lines.append(
         "Memory Used In Incident: "
