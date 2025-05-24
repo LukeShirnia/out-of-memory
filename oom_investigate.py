@@ -557,7 +557,7 @@ class OOMAnalyzer(Printer):
         syslog_pattern = r"(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
         dmesg_pattern = r"^\[?\s*(\d+\.\d+)\]?"
         journalctl_pattern = (
-            r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{6})?(?:\+|-)\d{4})"
+            r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{6})?(?:\+|-)(?:\d{4}|\d{2}:\d{2}))"
         )
 
         syslog_match = re.search(syslog_pattern, line)
